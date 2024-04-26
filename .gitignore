@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+
+/build/
+/cmake-build-debug/
+/cmake-build-release/
+.idea/
+.cache/
+.vim/
+.vscode/
+/compile_flags.txt
+/compile_commands.json
