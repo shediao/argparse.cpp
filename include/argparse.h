@@ -301,7 +301,7 @@ class Flag {
 
   template <typename T,
             typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>
-  T const& get() {
+  T const& as() {
     if (std::holds_alternative<std::reference_wrapper<T>>(value)) {
       return std::get<std::reference_wrapper<T>>(value).get();
     }
@@ -526,7 +526,7 @@ class Option {
   }
 
   template <typename T>
-  T const& get() {
+  T const& as() {
     if (std::holds_alternative<std::reference_wrapper<T>>(value)) {
       return std::get<std::reference_wrapper<T>>(value).get();
     }
