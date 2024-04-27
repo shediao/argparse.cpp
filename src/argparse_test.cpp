@@ -41,18 +41,18 @@ TEST(ArgParser, parser0_3) {
     std::string option_o;
 
     argparse::ArgParser parser;
-    parser.add_flag('a',"",flag_a);
-    parser.add_flag('b',"", flag_b);
-    parser.add_flag('c',"", flag_c);
-    parser.add_flag('d',"", flag_d);
-    parser.add_flag('h',"help", flag_h);
-    parser.add_flag('1',"", flag_1);
-    parser.add_flag('2',"", flag_2);
-    parser.add_flag('3',"", flag_3);
-    parser.add_flag('v',"verbose", flag_v);
-    parser.add_option('e',"env", option_e);
-    parser.add_option('f',"file", option_f);
-    parser.add_option('o',"output", option_o);
+    parser.add_flag("-a",flag_a);
+    parser.add_flag("-b", flag_b);
+    parser.add_flag("-c", flag_c);
+    parser.add_flag("-d", flag_d);
+    parser.add_flag("-h,--help", flag_h);
+    parser.add_flag("-1", flag_1);
+    parser.add_flag("-2", flag_2);
+    parser.add_flag("-3", flag_3);
+    parser.add_flag("-v,--verbose", flag_v);
+    parser.add_option("-e,--env", option_e);
+    parser.add_option("-f,--file", option_f);
+    parser.add_option("-o,--output", option_o);
 
     std::vector<const char*> cmd2{ "test1", "-1", "-b", "-2", "-3", "-o", "8", "-f", "myfile", "--file", "/path/to/myfile", "-e", "xxx=yyy", "-e", "e1=v1", "-e", "e2=v2", "-vvvv"};
     auto [code, error_msg] = parser.parse(cmd2.size(), cmd2.data());

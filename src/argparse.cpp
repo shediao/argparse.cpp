@@ -31,6 +31,9 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
     auto current = command_line_args.begin();
 
     if (auto& first = *command_line_args.begin(); !first.empty() && first[0] != '-') {
+        if (program_name.empty()) {
+            program_name = first;
+        }
         // 0 ==> skip program file path
         current = std::next(command_line_args.begin());
     }

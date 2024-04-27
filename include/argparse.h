@@ -356,6 +356,39 @@ class Flag {
                 },value);
     }
 
+    std::string usage() {
+        std::stringstream ss;
+        auto short_it = begin(short_names);
+        if (short_it != end(short_names)) {
+            ss << "  -" << *short_it;
+            short_it++;
+        }
+        for (; short_it != end(short_names); ++short_it) {
+            ss << ", -" << *short_it;
+        }
+
+        auto long_it = begin(long_names);
+        if (long_it != end(long_names)) {
+            if (short_names.empty()) {
+                ss << "  --" << *long_it;
+            } else {
+                ss << ", --" << *long_it;
+            }
+            long_it++;
+        }
+
+        for(;long_it != end(long_names); long_it++) {
+            ss << ", --" << *long_it;
+        }
+        ss << "\n";
+
+        if (!help_msg.empty()) {
+            ss << "         " << help_msg << "\n";
+        }
+
+        return ss.str();
+    }
+
     private:
     std::vector<char> short_names{};
     std::vector<std::string> long_names{};
@@ -437,6 +470,46 @@ class Option {
                 },value);
     }
 
+    std::string usage(){
+        std::stringstream ss;
+        auto short_it = begin(short_names);
+        if (short_it != end(short_names)) {
+            ss << "  -" << *short_it;
+            short_it++;
+        }
+        for (; short_it != end(short_names); ++short_it) {
+            ss << ", -" << *short_it;
+        }
+
+        auto long_it = begin(long_names);
+        if (long_it != end(long_names)) {
+            if (short_names.empty()) {
+                ss << "  --" << *long_it;
+            } else {
+                ss << ", --" << *long_it;
+            }
+            long_it++;
+        }
+
+        for(;long_it != end(long_names); long_it++) {
+            ss << ", --" << *long_it;
+        }
+        if (!long_names.empty()) {
+            if (val_help_msg.empty()) {
+                ss << "=<TEXT>";
+            } else {
+                ss << "=<" << val_help_msg << ">";
+            }
+        }
+        ss << "\n";
+
+        if (!help_msg.empty()) {
+            ss << "         " << help_msg << "\n";
+        }
+
+        return ss.str();
+    }
+
     private:
     std::vector<char> short_names;
     std::vector<std::string> long_names;
@@ -459,12 +532,19 @@ class ArgParser {
     };
 
     ArgParser(){ }
-    explicit ArgParser(std::string const& description){ }
+    explicit ArgParser(std::string const& description):description(description){ }
+
+    ArgParser& set_program_name(std::string const& program_name) {
+        this->program_name = program_name;
+        return *this;
+    }
 
     template<typename T,typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>
     Flag& add_flag(std::string const& flag_desc, T& bind) {
         auto x = std::make_unique<Flag>(flag_desc, bind);
         auto p = x.get();
+        assert(end(p->short_names) == find_if(begin(p->short_names), end(p->short_names), [this](char f) { return get_flag(f).has_value(); }));
+        assert(end(p->long_names) == find_if(begin(p->long_names), end(p->long_names), [this](std::string const& f) { return get_flag(f).has_value(); }));
         flags.push_back(std::move(x));
         return *p;
     }
@@ -473,39 +553,8 @@ class ArgParser {
     Option& add_option(std::string const& option_desc, T& bind) {
         auto x = std::make_unique<Option>(option_desc, bind);
         auto p = x.get();
-        options.push_back(std::move(x));
-        return *p;
-    }
-    template<typename T,typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>
-    Flag& add_flag(char short_name, std::string const& long_name, T& bind) {
-        // TODO: print an error?
-        // TODO: check flags exists.
-        if (short_name != '\0') {
-            std::erase_if(flags, [short_name](auto const& flag){ return flag->is_my_flag(short_name); });
-        }
-        if (!long_name.empty()) {
-            std::erase_if(flags, [&long_name](auto const& flag){ return flag->is_my_flag(long_name); });
-        }
-
-        auto x = std::make_unique<Flag>(short_name, long_name, bind);
-        auto p = x.get();
-        flags.push_back(std::move(x));
-        return *p;
-    }
-
-    template<typename T,typename = std::enable_if_t<is_option_bind_value_type_v<T>>>
-    Option& add_option(char short_name, std::string const& long_name, T&bind) {
-        // TODO: print an error?
-        // TODO: check options exists.
-        if (short_name != '\0') {
-            std::erase_if(options, [short_name](auto const& opt){ return opt->is_my_option(short_name); });
-        }
-        if (!long_name.empty()) {
-            std::erase_if(options, [&long_name](auto const& opt){ return opt->is_my_option(long_name); });
-        }
-
-        auto x = std::make_unique<Option>(short_name, long_name, bind);
-        auto p = x.get();
+        assert(end(p->short_names) == find_if(begin(p->short_names), end(p->short_names), [this](char f) { return get_flag(f).has_value(); }));
+        assert(end(p->long_names) == find_if(begin(p->long_names), end(p->long_names), [this](std::string const& f) { return get_flag(f).has_value(); }));
         options.push_back(std::move(x));
         return *p;
     }
@@ -513,6 +562,24 @@ class ArgParser {
     template<typename T,typename = std::enable_if_t<is_position_bind_value_type_v<T>>>
     void add_position_arg(T& bind){
         position_args.emplace_back(std::ref(bind));
+    }
+
+    std::string usage() {
+        std::stringstream ss;
+        ss << (program_name.empty() ? "?" : program_name) << " [OPTION]... ";
+        if (not position_args.empty()) {
+            ss << " [--] [args....]";
+        }
+        ss << "\n\n";
+        ss << description << "\n\n";
+        for(auto it = begin(flags); it != end(flags); ++it) {
+            ss << (*it)->usage() << "\n";
+        }
+        for(auto it = begin(options); it != end(options); ++it) {
+            ss << (*it)->usage() << "\n";
+        }
+
+        return ss.str();
     }
 
     std::pair<ParseErrorCode/*exit code*/, std::string/*error message*/> parse(int argc, const char* argv[]);
@@ -535,9 +602,11 @@ class ArgParser {
         return {};
     }
 
+    std::string description{};
+    std::string program_name{};
 
-    std::vector<std::unique_ptr<Flag>> flags;
-    std::vector<std::unique_ptr<Option>> options;
+    std::vector<std::unique_ptr<Flag>> flags{};
+    std::vector<std::unique_ptr<Option>> options{};
 
     std::vector<
         std::variant<

@@ -74,7 +74,8 @@ void reset_cat_flags() {
 }
 
 argparse::ArgParser bind_value() {
-    argparse::ArgParser parser;
+    argparse::ArgParser parser{"concatenate files and print on the standard output"};
+    parser.set_program_name("cat");
     parser.add_flag("-A,--show-all", cat_flags.show_all)
         .help("equivalent to -vET");
     parser.add_flag("-b,--number-nonblank", cat_flags.number_nonblank)

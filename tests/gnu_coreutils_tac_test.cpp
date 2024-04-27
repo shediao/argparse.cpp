@@ -45,7 +45,8 @@ void reset_tac_flags() {
 }
 
 argparse::ArgParser bind_value() {
-    argparse::ArgParser parser;
+    argparse::ArgParser parser{"concatenate and print files in reverse"};
+    parser.set_program_name("tac");
     parser.add_flag("-b,--before", tac_flags.before)
         .help("attach the separator before instead of after");
     parser.add_flag("-r,--regex", tac_flags.regex)
@@ -178,4 +179,6 @@ TEST(Cat, separator3) {
     EXPECT_EQ(argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS, ret);
     EXPECT_TRUE(msg.empty());
     EXPECT_EQ(tac_flags.separator, "+");
+
+    std::cout << parser.usage() << std::endl;
 }
