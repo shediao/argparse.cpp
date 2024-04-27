@@ -5,7 +5,7 @@ TEST(ArgParser, parse0){
     argparse::ArgParser parser1;
     std::vector<const char*> cmd{"test0"};
     auto [code, msg] = parser1.parse(cmd.size(), cmd.data());
-    EXPECT_EQ(code, argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS);
+    EXPECT_EQ(code, 0);
     EXPECT_TRUE(msg.empty());
 
 }
@@ -13,7 +13,7 @@ TEST(ArgParser, parse0_1){
     argparse::ArgParser parser1;
     std::vector<const char*> cmd{"test0", "-f"};
     auto [code, msg] = parser1.parse(cmd.size(), cmd.data());
-    EXPECT_EQ(code, argparse::ArgParser::ParseErrorCode::PARSE_FAILURE);
+    EXPECT_EQ(code, 1);
     EXPECT_EQ("invalid option -- -f", msg);
 
 }
@@ -21,7 +21,7 @@ TEST(ArgParser, parse0_2){
     argparse::ArgParser parser1;
     std::vector<const char*> cmd{"test0", "--"};
     auto [code, msg] = parser1.parse(cmd.size(), cmd.data());
-    EXPECT_EQ(code, argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS);
+    EXPECT_EQ(code, 0);
     EXPECT_TRUE(msg.empty());
 
 }
@@ -56,7 +56,7 @@ TEST(ArgParser, parser0_3) {
 
     std::vector<const char*> cmd2{ "test1", "-1", "-b", "-2", "-3", "-o", "8", "-f", "myfile", "--file", "/path/to/myfile", "-e", "xxx=yyy", "-e", "e1=v1", "-e", "e2=v2", "-vvvv"};
     auto [code, error_msg] = parser.parse(cmd2.size(), cmd2.data());
-    ASSERT_EQ(code, argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS);
+    ASSERT_EQ(code, 0);
     EXPECT_EQ(flag_a, false);
     EXPECT_EQ(flag_b, true);
     EXPECT_EQ(flag_c, false);
@@ -68,9 +68,9 @@ TEST(ArgParser, parser0_3) {
     EXPECT_EQ(flag_v, 4);
 
     EXPECT_EQ(3, option_e.size());
-    EXPECT_TRUE(option_e.contains("e1"));
-    EXPECT_TRUE(option_e.contains("e2"));
-    EXPECT_TRUE(option_e.contains("xxx"));
+    EXPECT_TRUE(option_e.find("e1") != option_e.end());
+    EXPECT_TRUE(option_e.find("e2") != option_e.end());
+    EXPECT_TRUE(option_e.find("xxx") != option_e.end());
     EXPECT_EQ(option_e.at("e1"), "v1");
     EXPECT_EQ(option_e.at("e2"), "v2");
     EXPECT_EQ(option_e.at("xxx"), "yyy");
@@ -90,7 +90,7 @@ TEST(ArgParser, negate){
     parser.add_flag("-r,--release,!-d,!--debug", is_release);
     std::vector<const char*> cmd{"test0", "--debug", "--release", "-d"};
     auto [code, msg] = parser.parse(cmd.size(), cmd.data());
-    EXPECT_EQ(code, argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS) << msg;
+    EXPECT_EQ(code, 0) << msg;
 
     EXPECT_FALSE(is_release);
 }

@@ -148,6 +148,18 @@ namespace {
         ret.erase(find_if( rbegin(ret), rend(ret), [](unsigned char c){ return !std::isspace(c); }).base(), ret.end());
         return ret;
     }
+    inline static bool is_short_opt(std::string const& opt) {
+        return opt.size() >= 2 && opt[0] == '-' && opt[1] != '-';
+    }
+    inline static bool is_long_opt(std::string const& opt) {
+        return opt.size() >= 3 && opt[0] == '-' && opt[1] == '-' && opt[2] != '-';
+    }
+    inline static bool is_dash_dash(std::string const& opt) {
+        return opt == "--";
+    }
+    inline static bool is_position_arg(std::string const& str) {
+        return !is_short_opt(str) && ! is_long_opt(str) && !is_dash_dash(str);
+    }
     };
 
     // bool
@@ -210,8 +222,8 @@ namespace {
         if (it != std::string::npos) {
             auto key_str = from.substr(0, it);
             auto value_str = from.substr(it+1);
-            auto [err_k, msg_k, val_k] = transform_value<typename std::decay<decltype(get<0>(std::declval<T&>()))>::type>(key_str);
-            auto [err_v, msg_v, val_v] = transform_value<typename std::decay<decltype(get<1>(std::declval<T&>()))>::type>(value_str);
+            auto [err_k, msg_k, val_k] = transform_value<typename std::decay<decltype(std::get<0>(std::declval<T&>()))>::type>(key_str);
+            auto [err_v, msg_v, val_v] = transform_value<typename std::decay<decltype(std::get<1>(std::declval<T&>()))>::type>(value_str);
             return {0, "", {val_k, val_v}};
         } else {
             std::stringstream ss;
@@ -242,15 +254,6 @@ namespace {
     }
 }
 
-struct Result {
-    enum class ErrCode {
-        SUCCESS,
-        FAILURE
-    };
-    using ErrCode::SUCCESS;
-    using ErrCode::FAILURE;
-    int code; std::string err_msg;
-};
 class ArgParser;
 class Flag {
     friend class ArgParser;
@@ -525,12 +528,6 @@ class Option {
 
 class ArgParser {
     public:
-    enum class ParseErrorCode{
-        PARSE_UNKNOWN,
-        PARSE_FAILURE,
-        PARSE_SUCCESS
-    };
-
     ArgParser(){ }
     explicit ArgParser(std::string const& description):description(description){ }
 
@@ -582,7 +579,7 @@ class ArgParser {
         return ss.str();
     }
 
-    std::pair<ParseErrorCode/*exit code*/, std::string/*error message*/> parse(int argc, const char* argv[]);
+    std::pair<int/*exit code*/, std::string/*error message*/> parse(int argc, const char* argv[]);
 
     private:
     template<typename T, typename = std::enable_if_t<std::is_same_v<T, char> || std::is_same_v<T, std::string>>>

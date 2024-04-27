@@ -68,7 +68,7 @@ TEST(Cat, help) {
     std::vector<const char*> cmds = {"tac", "--help"};
     auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
 
-    EXPECT_EQ(argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS, ret);
+    EXPECT_EQ(0, ret);
     EXPECT_TRUE(msg.empty());
 
     EXPECT_FALSE(tac_flags.before);
@@ -88,7 +88,7 @@ TEST(Cat, version) {
     std::vector<const char*> cmds = {"tac", "--version"};
     auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
 
-    EXPECT_EQ(argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS, ret);
+    EXPECT_EQ(0, ret);
     EXPECT_TRUE(msg.empty());
 
     EXPECT_FALSE(tac_flags.before);
@@ -127,7 +127,7 @@ TEST(Cat, no_args) {
     std::vector<const char*> cmds = {"tac"};
     auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
 
-    EXPECT_EQ(argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS, ret);
+    EXPECT_EQ(0, ret);
     EXPECT_TRUE(msg.empty());
 
     EXPECT_FALSE(tac_flags.before);
@@ -145,7 +145,7 @@ TEST(Cat, separator) {
     std::vector<const char*> cmds = {"tac", "--separator=,"};
     auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
 
-    EXPECT_EQ(argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS, ret) << msg;
+    EXPECT_EQ(0, ret) << msg;
     EXPECT_TRUE(msg.empty());
 
     EXPECT_FALSE(tac_flags.before);
@@ -164,7 +164,7 @@ TEST(Cat, separator2) {
     std::vector<const char*> cmds = {"tac", R"(--separator=\n)"};
     auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
 
-    EXPECT_EQ(argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS, ret);
+    EXPECT_EQ(0, ret);
     EXPECT_TRUE(msg.empty());
     EXPECT_EQ(tac_flags.separator, "\\n");
 }
@@ -176,7 +176,7 @@ TEST(Cat, separator3) {
     std::vector<const char*> cmds = {"tac", "-s", "+"};
     auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
 
-    EXPECT_EQ(argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS, ret);
+    EXPECT_EQ(0, ret);
     EXPECT_TRUE(msg.empty());
     EXPECT_EQ(tac_flags.separator, "+");
 

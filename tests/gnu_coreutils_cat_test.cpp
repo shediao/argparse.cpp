@@ -112,7 +112,7 @@ TEST(Cat, help) {
     std::vector<const char*> cmds = {"cat", "--help"};
     auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
 
-    EXPECT_EQ(argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS, ret);
+    EXPECT_EQ(0, ret);
     EXPECT_TRUE(msg.empty());
 
     EXPECT_FALSE(cat_flags.show_all);
@@ -138,7 +138,7 @@ TEST(Cat, version) {
     std::vector<const char*> cmds = {"cat", "--version"};
     auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
 
-    EXPECT_EQ(argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS, ret);
+    EXPECT_EQ(0, ret);
     EXPECT_TRUE(msg.empty());
 
     EXPECT_FALSE(cat_flags.show_all);
@@ -163,7 +163,7 @@ TEST(Cat, files) {
     std::vector<const char*> cmds = {"cat", "--", "-", "/path/to/file"};
     auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
 
-    EXPECT_EQ(argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS, ret);
+    EXPECT_EQ(0, ret);
     EXPECT_TRUE(msg.empty());
 
     EXPECT_FALSE(cat_flags.show_all);
@@ -193,7 +193,7 @@ TEST(Cat, no_args) {
     std::vector<const char*> cmds = {"cat"};
     auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
 
-    EXPECT_EQ(argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS, ret);
+    EXPECT_EQ(0, ret);
     EXPECT_TRUE(msg.empty());
 
     EXPECT_FALSE(cat_flags.show_all);
@@ -218,7 +218,7 @@ TEST(Cat, other_flag) {
     std::vector<const char*> cmds = {"cat", "-n", "--", "-"};
     auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
 
-    EXPECT_EQ(argparse::ArgParser::ParseErrorCode::PARSE_SUCCESS, ret);
+    EXPECT_EQ(0, ret);
     EXPECT_TRUE(msg.empty());
 
     EXPECT_FALSE(cat_flags.show_all);

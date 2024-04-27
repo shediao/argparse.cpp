@@ -19,14 +19,11 @@ namespace {
         return !is_short_opt(str) && ! is_long_opt(str) && !is_dash_dash(str);
     }
 }
-std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, const char* argv[]) {
-
-    using ArgParser::ParseErrorCode::PARSE_FAILURE;
-    using ArgParser::ParseErrorCode::PARSE_SUCCESS;
+std::pair<int, std::string> ArgParser::parse(int argc, const char* argv[]) {
 
     std::vector<std::string> command_line_args{argv, argv + argc};
 
-    if (command_line_args.size() == 0) { return {ParseErrorCode::PARSE_SUCCESS, ""}; }
+    if (command_line_args.size() == 0) { return {0, ""}; }
 
     auto current = command_line_args.begin();
 
@@ -56,7 +53,7 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
             if (current_position_it == position_args.end()) {
                 std::stringstream ss;
                 ss << "invalid option -- -" << curr_arg;
-                return {PARSE_FAILURE, ss.str()};
+                return {1, ss.str()};
             }
             if ((*current_position_it).index() == 2) {
                 auto const i = curr_arg.find('=');
@@ -110,12 +107,12 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
                         if (next == command_line_args.end()) {
                             std::stringstream ss;
                             ss << "option requires an argument -- -" << *short_p;
-                            return {PARSE_FAILURE, ss.str()};
+                            return {1, ss.str()};
                         } else {
                             if ((!next->empty() && (*next)[0] == '-')) {
                                 std::stringstream ss;
                                 ss << "option requires an argument -- -" << *short_p;
-                                return {PARSE_FAILURE, ss.str()};
+                                return {1, ss.str()};
                             } else {
                                 (*short_option)->hit(*short_p, *next);
                                 short_p = curr_arg.end();
@@ -126,7 +123,7 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
                 } else {
                     std::stringstream ss;
                     ss << "invalid option -- -" << *short_p;
-                    return {PARSE_FAILURE, ss.str()};
+                    return {1, ss.str()};
                 }
             }
             current = next;
@@ -139,7 +136,7 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
                 } else {
                     std::stringstream ss;
                     ss << "invalid option -- --" << option;
-                    return {PARSE_FAILURE, ss.str()};
+                    return {1, ss.str()};
                 }
             } else {
                 std::string option = curr_arg.substr(2);
@@ -149,11 +146,11 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
                     if (std::next(current) == command_line_args.end()) {
                         std::stringstream ss;
                         ss << "option requires an argument -- --" << option;
-                        return {PARSE_FAILURE, ss.str()};
+                        return {1, ss.str()};
                     } else if (!next->empty() && (*next)[0] == '-') {
                         std::stringstream ss;
                         ss << "option requires an argument -- --" <<  option;
-                        return {PARSE_FAILURE, ss.str()};
+                        return {1, ss.str()};
                     } else {
                         (*long_opt)->hit(option, *next);
                         next = std::next(next);
@@ -161,7 +158,7 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
                 } else {
                     std::stringstream ss;
                     ss << "invalid option -- --" << option;
-                    return {PARSE_FAILURE, ss.str()};
+                    return {1, ss.str()};
                 }
             }
             current = next;
@@ -178,10 +175,10 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
                },
            },(*current_position_it));
        if (code != 0) {
-           return {PARSE_FAILURE, err_msg};
+           return {1, err_msg};
        }
     }
-    return {PARSE_SUCCESS, ""};
+    return {0, ""};
 }
 }  // namespace
 
