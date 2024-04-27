@@ -1,9 +1,17 @@
 
-#pragma once
+#ifndef __ARGPARSE_CPP_H__
+#define __ARGPARSE_CPP_H__
+
+//  TODO:
+//  1. support POSIXLY_CORRECT
+//  2. c++17
+//  3. argparse.cpp is interface library
+//  4. accept long options recognize unambiguous abbreviations of those options.
+//  5. environment bind
+
 #include <assert.h>
 #include <algorithm>
 #include <charconv>
-#include <format>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -109,14 +117,14 @@ namespace {
         }
         return true;
     }
-    std::vector<std::string> split(std::string const& s, char delimiter, int count = 0) {
+    std::vector<std::string> split(std::string const& s, char delimiter, int number = 0) {
         std::vector<std::string> result;
         std::stringstream ss{s};
         std::string token;
         int splitCount = 0;
-        while((count <=0 || splitCount++ < count) && getline(ss, token, delimiter)) {
+        while((number <=0 || splitCount++ < number) && getline(ss, token, delimiter)) {
             result.push_back(token);
-            if (count >0 && splitCount == count) {
+            if (number >0 && splitCount == number) {
                 getline(ss, token);
                 result.push_back(token);
             }
@@ -146,7 +154,9 @@ namespace {
         } else if (lower_from == "false") {
             return {0, "", false};
         } else {
-            return {1, std::format("'{}' must be one of 'true' or 'false'", from), false};
+            std::stringstream ss;
+            ss << "'" << from << "' must be one of 'true' or 'false'";
+            return {1, ss.str(), false};
         }
     }
 
@@ -156,9 +166,13 @@ namespace {
         T to{};
         auto [ptr, ec] = std::from_chars(from.data(), from.data() + from.size(), to);
         if (ec == std::errc::invalid_argument) {
-            return {1, std::format("{} not invalid number", from), to};
+            std::stringstream ss;
+            ss << "'" << from << "' not invalid number";
+            return {1, ss.str(), to};
         } else if (ec != std::errc{}) {
-            return {1, std::format("{} can't convert to a number", from), to};
+            std::stringstream ss;
+            ss << "'" << from << "'  can't convert to a number";
+            return {1, ss.str(), to};
         }
         return {0, "", to};
     }
@@ -171,7 +185,9 @@ namespace {
         if (pos == std::string::npos) {
             return {0, "", to};
         } {
-            return {1, std::format("{} not invalid double", from), to};
+            std::stringstream ss;
+            ss << "'" << from << "' not invalid double value";
+            return {1, ss.str(), to};
         }
     }
 
@@ -192,7 +208,9 @@ namespace {
             auto [err_v, msg_v, val_v] = transform_value<typename std::decay<decltype(get<1>(std::declval<T&>()))>::type>(value_str);
             return {0, "", {val_k, val_v}};
         } else {
-            return {1, std::format("{} is not a '=' separated string", from), {}};
+            std::stringstream ss;
+            ss << "'" << from << "' is not a '=' separated string";
+            return {1, ss.str(), {}};
         }
     }
 
@@ -273,6 +291,11 @@ class Flag {
         : short_names(short_names),
         long_names(long_names),
         value(bind){ }
+
+    Flag& help(std::string const& help) {
+        help_msg = help;
+        return *this;
+    }
 
     private:
     bool is_my_flag(char flag) {
@@ -377,6 +400,12 @@ class Option {
         long_names(long_names),
         value(bind){ }
 
+    Option& help(std::string const& help) {
+        help_msg = help;
+        return *this;
+    }
+
+
     private:
     bool is_my_option(char option) {
         return find(begin(short_names), end(short_names), option) != end(short_names);
@@ -422,6 +451,10 @@ class ArgParser {
         PARSE_FAILURE,
         PARSE_SUCCESS
     };
+
+    ArgParser(){ }
+    explicit ArgParser(std::string const& description){ }
+
     template<typename T,typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>
     Flag& add_flag(std::string const& flag_desc, T& bind) {
         auto x = std::make_unique<Flag>(flag_desc, bind);
@@ -510,3 +543,6 @@ class ArgParser {
 };
 
 }  // namespace argparse
+
+
+#endif  // __ARGPARSE_CPP_H__

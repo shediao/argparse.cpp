@@ -2,7 +2,7 @@
 
 #include <assert.h>
 #include <iterator>
-#include <format>
+#include <sstream>
 
 namespace argparse {
 namespace {
@@ -51,7 +51,9 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
 
         if (is_position_arg(curr_arg)) {
             if (current_position_it == position_args.end()) {
-                return {PARSE_FAILURE, std::format("invalid option -- -{}", curr_arg)};
+                std::stringstream ss;
+                ss << "invalid option -- -" << curr_arg;
+                return {PARSE_FAILURE, ss.str()};
             }
             if ((*current_position_it).index() == 2) {
                 auto const i = curr_arg.find('=');
@@ -103,10 +105,14 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
                         short_p = curr_arg.end();
                     } else {
                         if (next == command_line_args.end()) {
-                            return {PARSE_FAILURE, std::format("option requires an argument -- -{}", *short_p)};
+                            std::stringstream ss;
+                            ss << "option requires an argument -- -" << *short_p;
+                            return {PARSE_FAILURE, ss.str()};
                         } else {
                             if ((!next->empty() && (*next)[0] == '-')) {
-                                return {PARSE_FAILURE, std::format("option requires an argument -- -{}", *short_p)};
+                                std::stringstream ss;
+                                ss << "option requires an argument -- -" << *short_p;
+                                return {PARSE_FAILURE, ss.str()};
                             } else {
                                 (*short_option)->hit(*short_p, *next);
                                 short_p = curr_arg.end();
@@ -115,7 +121,9 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
                         }
                     }
                 } else {
-                    return {PARSE_FAILURE, std::format("invalid option -- -{}", *short_p)};
+                    std::stringstream ss;
+                    ss << "invalid option -- -" << *short_p;
+                    return {PARSE_FAILURE, ss.str()};
                 }
             }
             current = next;
@@ -126,7 +134,9 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
                 if (auto long_opt = get_option(option); long_opt.has_value()) {
                     (*long_opt)->hit(option, curr_arg.substr(i+1));
                 } else {
-                    return {PARSE_FAILURE, std::format("invalid option -- --{}", option)};
+                    std::stringstream ss;
+                    ss << "invalid option -- -" << option;
+                    return {PARSE_FAILURE, ss.str()};
                 }
             } else {
                 std::string option = curr_arg.substr(2,i);
@@ -134,15 +144,21 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
                     (*long_flag)->hit(option);
                 } else if (auto long_opt = get_option(option); long_opt.has_value()) {
                     if (std::next(current) == command_line_args.end()) {
-                        return {PARSE_FAILURE, std::format("option requires an argument -- --{}", option)};
+                        std::stringstream ss;
+                        ss << "option requires an argument -- --" << option;
+                        return {PARSE_FAILURE, ss.str()};
                     } else if (!next->empty() && (*next)[0] == '-') {
-                        return {PARSE_FAILURE, std::format("option requires an argument -- --{}", option)};
+                        std::stringstream ss;
+                        ss << "option requires an argument -- --" <<  option;
+                        return {PARSE_FAILURE, ss.str()};
                     } else {
                         (*long_opt)->hit(option, *next);
                         next = std::next(next);
                     }
                 } else {
-                    return {PARSE_FAILURE, std::format("invalid option -- --{}", option)};
+                    std::stringstream ss;
+                    ss << "invalid option -- --" << option;
+                    return {PARSE_FAILURE, ss.str()};
                 }
             }
             current = next;
