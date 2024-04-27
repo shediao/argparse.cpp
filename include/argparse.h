@@ -281,7 +281,7 @@ std::pair<int, std::string> insert_or_replace_value(
   }
   return {ec, error_msg};
 }
-}
+}  // namespace
 
 class ArgParser;
 class Flag {
@@ -328,167 +328,187 @@ class Flag {
 
   void hit(char flag) {
     count++;
-        std::visit(overloaded{
-                    [flag, this](bool &x) {
-      if (end(short_names) !=
-          find(begin(short_names), end(short_names), flag)) {
-        x = true;
-      }
-      if (end(negate_short_names) !=
-          find(begin(negate_short_names), end(negate_short_names), flag)) {
-        x = false;
-      }
-                    },
-                    [flag, this]<typename T, typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>(T &x) {
-                        if (end(short_names) != find(begin(short_names), end(short_names), flag)) {
-                            x += 1;
+    std::visit(
+        overloaded{
+            [flag, this](bool& x) {
+              if (end(short_names) !=
+                  find(begin(short_names), end(short_names), flag)) {
+                x = true;
+              }
+              if (end(negate_short_names) != find(begin(negate_short_names),
+                                                  end(negate_short_names),
+                                                  flag)) {
+                x = false;
+              }
+            },
+            [flag,
+             this]<typename T,
+                   typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>(
+                T& x) {
+              if (end(short_names) !=
+                  find(begin(short_names), end(short_names), flag)) {
+                x += 1;
+              }
+              if (end(negate_short_names) != find(begin(negate_short_names),
+                                                  end(negate_short_names),
+                                                  flag)) {
+                x -= 1;
+              }
+            },
+            [flag, this](std::reference_wrapper<bool>& x) {
+              if (end(short_names) !=
+                  find(begin(short_names), end(short_names), flag)) {
+                x.get() = true;
+              }
+              if (end(negate_short_names) != find(begin(negate_short_names),
+                                                  end(negate_short_names),
+                                                  flag)) {
+                x.get() = false;
+              }
+            },
+            [flag,
+             this]<typename T,
+                   typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>(
+                std::reference_wrapper<T>& x) {
+              if (end(short_names) !=
+                  find(begin(short_names), end(short_names), flag)) {
+                x.get() += 1;
+              }
+              if (end(negate_short_names) != find(begin(negate_short_names),
+                                                  end(negate_short_names),
+                                                  flag)) {
+                x.get() -= 1;
+              }
+            }},
+        value);
   }
-  if (end(negate_short_names) !=
-      find(begin(negate_short_names), end(negate_short_names), flag)) {
-    x -= 1;
+  void hit(std::string const& flag) {
+    count++;
+    std::visit(
+        overloaded{
+            [&flag, this](bool& x) {
+              if (end(long_names) !=
+                  find(begin(long_names), end(long_names), flag)) {
+                x = true;
+              }
+              if (end(negate_long_names) != find(begin(negate_long_names),
+                                                 end(negate_long_names),
+                                                 flag)) {
+                x = false;
+              }
+            },
+            [&flag,
+             this]<typename T,
+                   typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>(
+                T& x) {
+              if (end(long_names) !=
+                  find(begin(long_names), end(long_names), flag)) {
+                x += 1;
+              }
+              if (end(negate_long_names) != find(begin(negate_long_names),
+                                                 end(negate_long_names),
+                                                 flag)) {
+                x -= 1;
+              }
+            },
+            [&flag, this](std::reference_wrapper<bool>& x) {
+              if (end(long_names) !=
+                  find(begin(long_names), end(long_names), flag)) {
+                x.get() = true;
+              }
+              if (end(negate_long_names) != find(begin(negate_long_names),
+                                                 end(negate_long_names),
+                                                 flag)) {
+                x.get() = false;
+              }
+            },
+            [&flag,
+             this]<typename T,
+                   typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>(
+                std::reference_wrapper<T>& x) {
+              if (end(long_names) !=
+                  find(begin(long_names), end(long_names), flag)) {
+                x.get() += 1;
+              }
+              if (end(negate_long_names) != find(begin(negate_long_names),
+                                                 end(negate_long_names),
+                                                 flag)) {
+                x.get() -= 1;
+              }
+            }},
+        value);
   }
-},
-    [flag, this](std::reference_wrapper<bool>& x) {
-      if (end(short_names) !=
-          find(begin(short_names), end(short_names), flag)) {
-        x.get() = true;
-      }
-      if (end(negate_short_names) !=
-          find(begin(negate_short_names), end(negate_short_names), flag)) {
-        x.get() = false;
-      }
-    },
-    [
-      flag, this
-    ]<typename T, typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>(
-        std::reference_wrapper<T>& x) {
-  if (end(short_names) != find(begin(short_names), end(short_names), flag)) {
-    x.get() += 1;
-  }
-  if (end(negate_short_names) !=
-      find(begin(negate_short_names), end(negate_short_names), flag)) {
-    x.get() -= 1;
-  }
-}
-},value);
-}
-void hit(std::string const& flag) {
-  count++;
-        std::visit(overloaded{
-                    [&flag, this](bool &x) {
-    if (end(long_names) != find(begin(long_names), end(long_names), flag)) {
-      x = true;
-    }
-    if (end(negate_long_names) !=
-        find(begin(negate_long_names), end(negate_long_names), flag)) {
-      x = false;
-    }
-                    },
-                    [&flag, this]<typename T, typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>(T &x) {
-                        if (end(long_names) != find(begin(long_names), end(long_names), flag)) {
-                            x += 1;
-}
-if (end(negate_long_names) !=
-    find(begin(negate_long_names), end(negate_long_names), flag)) {
-  x -= 1;
-}
-}
-,
-    [&flag, this](std::reference_wrapper<bool>& x) {
-      if (end(long_names) != find(begin(long_names), end(long_names), flag)) {
-        x.get() = true;
-      }
-      if (end(negate_long_names) !=
-          find(begin(negate_long_names), end(negate_long_names), flag)) {
-        x.get() = false;
-      }
-    },
-    [
-      &flag, this
-    ]<typename T, typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>(
-        std::reference_wrapper<T>& x) {
-  if (end(long_names) != find(begin(long_names), end(long_names), flag)) {
-    x.get() += 1;
-  }
-  if (end(negate_long_names) !=
-      find(begin(negate_long_names), end(negate_long_names), flag)) {
-    x.get() -= 1;
-  }
-}
-},value);
-}
 
-std::string usage() {
-  std::stringstream ss;
-  auto short_it = begin(short_names);
-  if (short_it != end(short_names)) {
-    ss << "  -" << *short_it;
-    short_it++;
-  }
-  for (; short_it != end(short_names); ++short_it) {
-    ss << ", -" << *short_it;
-  }
+  std::string usage() {
+    std::stringstream ss;
+    auto short_it = begin(short_names);
+    if (short_it != end(short_names)) {
+      ss << "  -" << *short_it;
+      short_it++;
+    }
+    for (; short_it != end(short_names); ++short_it) {
+      ss << ", -" << *short_it;
+    }
 
-  auto long_it = begin(long_names);
-  if (long_it != end(long_names)) {
-    if (short_names.empty()) {
-      ss << "  --" << *long_it;
-    } else {
+    auto long_it = begin(long_names);
+    if (long_it != end(long_names)) {
+      if (short_names.empty()) {
+        ss << "  --" << *long_it;
+      } else {
+        ss << ", --" << *long_it;
+      }
+      long_it++;
+    }
+
+    for (; long_it != end(long_names); long_it++) {
       ss << ", --" << *long_it;
     }
-    long_it++;
+    ss << "\n";
+
+    if (!help_msg.empty()) {
+      ss << "         " << help_msg << "\n";
+    }
+
+    return ss.str();
   }
 
-  for (; long_it != end(long_names); long_it++) {
-    ss << ", --" << *long_it;
-  }
-  ss << "\n";
-
-  if (!help_msg.empty()) {
-    ss << "         " << help_msg << "\n";
-  }
-
-  return ss.str();
-}
-
-private:
-void Flag_init(std::string const& flag_desc) {
-  auto all = StringUtil::split(flag_desc, ',');
-  assert(!all.empty());
-  for (auto const& f : all) {
-    assert(f.size() >= 2);
-    if (f[0] == '!') {
-      assert(f[1] == '-');
-      if (f[1] == '-' && f[2] != '-') {
-        negate_short_names.push_back(f[2]);
-      } else if (f[1] == '-' && f[2] == '-' && f[3] != '-') {
-        negate_long_names.push_back(f.substr(3));
-      }
-    } else {
-      assert(f[0] == '-');
-      if (f[0] == '-' && f[1] != '-') {
-        short_names.push_back(f[1]);
-      } else if (f[0] == '-' && f[1] == '-' && f[2] != '-') {
-        long_names.push_back(f.substr(2));
+ private:
+  void Flag_init(std::string const& flag_desc) {
+    auto all = StringUtil::split(flag_desc, ',');
+    assert(!all.empty());
+    for (auto const& f : all) {
+      assert(f.size() >= 2);
+      if (f[0] == '!') {
+        assert(f[1] == '-');
+        if (f[1] == '-' && f[2] != '-') {
+          negate_short_names.push_back(f[2]);
+        } else if (f[1] == '-' && f[2] == '-' && f[3] != '-') {
+          negate_long_names.push_back(f.substr(3));
+        }
+      } else {
+        assert(f[0] == '-');
+        if (f[0] == '-' && f[1] != '-') {
+          short_names.push_back(f[1]);
+        } else if (f[0] == '-' && f[1] == '-' && f[2] != '-') {
+          long_names.push_back(f.substr(2));
+        }
       }
     }
   }
-}
 
-private:
-std::vector<char> short_names{};
-std::vector<std::string> long_names{};
-std::vector<char> negate_short_names{};
-std::vector<std::string> negate_long_names{};
-std::string help_msg{};
-int count{0};
-std::variant<std::reference_wrapper<bool>,
-             std::reference_wrapper<int>,
-             bool,
-             int>
-    value;
-}
-;
+ private:
+  std::vector<char> short_names{};
+  std::vector<std::string> long_names{};
+  std::vector<char> negate_short_names{};
+  std::vector<std::string> negate_long_names{};
+  std::string help_msg{};
+  int count{0};
+  std::variant<std::reference_wrapper<bool>,
+               std::reference_wrapper<int>,
+               bool,
+               int>
+      value;
+};
 
 class Option {
   friend class ArgParser;
@@ -541,220 +561,211 @@ class Option {
 
   std::pair<int, std::string> hit(char short_opt, std::string const& opt_val) {
     count++;
-        return std::visit(overloaded{
-                [&opt_val]<typename T, typename = std::enable_if_t<is_option_bind_value_type_v<T>>>(T &x) -> std::pair<int, std::string> {
-                    return insert_or_replace_value(x, opt_val);
+    return std::visit(
+        overloaded{
+            [&opt_val]<typename T,
+                       typename =
+                           std::enable_if_t<is_option_bind_value_type_v<T>>>(
+                T& x) -> std::pair<int, std::string> {
+              return insert_or_replace_value(x, opt_val);
+            },
+            [&opt_val]<typename T>(
+                std::reference_wrapper<T>& x) -> std::pair<int, std::string> {
+              return insert_or_replace_value(x.get(), opt_val);
+            }},
+        value);
   }
-  ,
-      [&opt_val]<typename T>(std::reference_wrapper<T>& x)
-          -> std::pair<int, std::string> {
-        return insert_or_replace_value(x.get(), opt_val);
+  std::pair<int, std::string> hit(std::string const& long_opt,
+                                  std::string const& opt_val) {
+    count++;
+    return std::visit(
+        overloaded{
+            [&opt_val]<typename T,
+                       typename =
+                           std::enable_if_t<is_option_bind_value_type_v<T>>>(
+                T& x) -> std::pair<int, std::string> {
+              return insert_or_replace_value(x, opt_val);
+            },
+            [&opt_val]<typename T>(
+                std::reference_wrapper<T>& x) -> std::pair<int, std::string> {
+              return insert_or_replace_value(x.get(), opt_val);
+            }},
+        value);
+  }
+
+  std::string usage() {
+    std::stringstream ss;
+    auto short_it = begin(short_names);
+    if (short_it != end(short_names)) {
+      ss << "  -" << *short_it;
+      short_it++;
+    }
+    for (; short_it != end(short_names); ++short_it) {
+      ss << ", -" << *short_it;
+    }
+
+    auto long_it = begin(long_names);
+    if (long_it != end(long_names)) {
+      if (short_names.empty()) {
+        ss << "  --" << *long_it;
+      } else {
+        ss << ", --" << *long_it;
       }
-                },value);
-                }
-                std::pair<int, std::string> hit(std::string const& long_opt,
-                                                std::string const& opt_val) {
-                  count++;
-        return std::visit(overloaded{
-                [&opt_val]<typename T, typename = std::enable_if_t<is_option_bind_value_type_v<T>>>(T &x) -> std::pair<int, std::string> {
-                    return insert_or_replace_value(x, opt_val);
-                }
-                ,
-                    [&opt_val]<typename T>(std::reference_wrapper<T>& x)
-                        -> std::pair<int, std::string> {
-                      return insert_or_replace_value(x.get(), opt_val);
-                    }
-                },value);
-                }
+      long_it++;
+    }
 
-                std::string usage() {
-                  std::stringstream ss;
-                  auto short_it = begin(short_names);
-                  if (short_it != end(short_names)) {
-                    ss << "  -" << *short_it;
-                    short_it++;
-                  }
-                  for (; short_it != end(short_names); ++short_it) {
-                    ss << ", -" << *short_it;
-                  }
+    for (; long_it != end(long_names); long_it++) {
+      ss << ", --" << *long_it;
+    }
+    if (!long_names.empty()) {
+      if (val_help_msg.empty()) {
+        ss << "=<TEXT>";
+      } else {
+        ss << "=<" << val_help_msg << ">";
+      }
+    }
+    ss << "\n";
 
-                  auto long_it = begin(long_names);
-                  if (long_it != end(long_names)) {
-                    if (short_names.empty()) {
-                      ss << "  --" << *long_it;
-                    } else {
-                      ss << ", --" << *long_it;
-                    }
-                    long_it++;
-                  }
+    if (!help_msg.empty()) {
+      ss << "         " << help_msg << "\n";
+    }
 
-                  for (; long_it != end(long_names); long_it++) {
-                    ss << ", --" << *long_it;
-                  }
-                  if (!long_names.empty()) {
-                    if (val_help_msg.empty()) {
-                      ss << "=<TEXT>";
-                    } else {
-                      ss << "=<" << val_help_msg << ">";
-                    }
-                  }
-                  ss << "\n";
+    return ss.str();
+  }
 
-                  if (!help_msg.empty()) {
-                    ss << "         " << help_msg << "\n";
-                  }
+ private:
+  std::vector<char> short_names;
+  std::vector<std::string> long_names;
+  std::string help_msg;
+  std::string val_help_msg;
+  int count;
+  std::variant<std::reference_wrapper<std::string>,
+               std::reference_wrapper<std::vector<std::string>>,
+               std::reference_wrapper<std::map<std::string, std::string>>,
+               std::string,
+               std::vector<std::string>,
+               std::map<std::string, std::string>>
+      value;
+};
 
-                  return ss.str();
-                }
+class ArgParser {
+ public:
+  ArgParser() {}
+  explicit ArgParser(std::string const& description)
+      : description(description) {}
 
-               private:
-                std::vector<char> short_names;
-                std::vector<std::string> long_names;
-                std::string help_msg;
-                std::string val_help_msg;
-                int count;
-                std::variant<
-                    std::reference_wrapper<std::string>,
-                    std::reference_wrapper<std::vector<std::string>>,
-                    std::reference_wrapper<std::map<std::string, std::string>>,
-                    std::string,
-                    std::vector<std::string>,
-                    std::map<std::string, std::string>>
-                    value;
-                }
-                ;
+  ArgParser& set_program_name(std::string const& program_name) {
+    this->program_name = program_name;
+    return *this;
+  }
 
-                class ArgParser {
-                 public:
-                  ArgParser() {}
-                  explicit ArgParser(std::string const& description)
-                      : description(description) {}
+  template <typename T,
+            typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>
+  Flag& add_flag(std::string const& flag_desc, T& bind) {
+    auto x = std::make_unique<Flag>(flag_desc, bind);
+    auto p = x.get();
+    assert(end(p->short_names) ==
+           find_if(begin(p->short_names), end(p->short_names),
+                   [this](char f) { return get_flag(f).has_value(); }));
+    assert(end(p->long_names) == find_if(begin(p->long_names),
+                                         end(p->long_names),
+                                         [this](std::string const& f) {
+                                           return get_flag(f).has_value();
+                                         }));
+    flags.push_back(std::move(x));
+    return *p;
+  }
 
-                  ArgParser& set_program_name(std::string const& program_name) {
-                    this->program_name = program_name;
-                    return *this;
-                  }
+  template <typename T,
+            typename = std::enable_if_t<is_option_bind_value_type_v<T>>>
+  Option& add_option(std::string const& option_desc, T& bind) {
+    auto x = std::make_unique<Option>(option_desc, bind);
+    auto p = x.get();
+    assert(end(p->short_names) ==
+           find_if(begin(p->short_names), end(p->short_names),
+                   [this](char f) { return get_flag(f).has_value(); }));
+    assert(end(p->long_names) == find_if(begin(p->long_names),
+                                         end(p->long_names),
+                                         [this](std::string const& f) {
+                                           return get_flag(f).has_value();
+                                         }));
+    options.push_back(std::move(x));
+    return *p;
+  }
 
-                  template <
-                      typename T,
-                      typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>
-                  Flag& add_flag(std::string const& flag_desc, T& bind) {
-                    auto x = std::make_unique<Flag>(flag_desc, bind);
-                    auto p = x.get();
-                    assert(end(p->short_names) ==
-                           find_if(begin(p->short_names), end(p->short_names),
-                                   [this](char f) {
-                                     return get_flag(f).has_value();
-                                   }));
-                    assert(end(p->long_names) ==
-                           find_if(begin(p->long_names), end(p->long_names),
-                                   [this](std::string const& f) {
-                                     return get_flag(f).has_value();
-                                   }));
-                    flags.push_back(std::move(x));
-                    return *p;
-                  }
+  template <typename T,
+            typename = std::enable_if_t<is_position_bind_value_type_v<T>>>
+  void add_position_arg(T& bind) {
+    position_args.emplace_back(std::ref(bind));
+  }
+  template <typename T,
+            typename = std::enable_if_t<is_position_bind_value_type_v<T>>>
+  void add_position_arg() {
+    position_args.emplace_back(T{});
+  }
 
-                  template <typename T,
-                            typename = std::enable_if_t<
-                                is_option_bind_value_type_v<T>>>
-                  Option& add_option(std::string const& option_desc, T& bind) {
-                    auto x = std::make_unique<Option>(option_desc, bind);
-                    auto p = x.get();
-                    assert(end(p->short_names) ==
-                           find_if(begin(p->short_names), end(p->short_names),
-                                   [this](char f) {
-                                     return get_flag(f).has_value();
-                                   }));
-                    assert(end(p->long_names) ==
-                           find_if(begin(p->long_names), end(p->long_names),
-                                   [this](std::string const& f) {
-                                     return get_flag(f).has_value();
-                                   }));
-                    options.push_back(std::move(x));
-                    return *p;
-                  }
+  std::string usage() {
+    std::stringstream ss;
+    ss << (program_name.empty() ? "?" : program_name) << " [OPTION]... ";
+    if (not position_args.empty()) {
+      ss << " [--] [args....]";
+    }
+    ss << "\n\n";
+    ss << description << "\n\n";
+    for (auto it = begin(flags); it != end(flags); ++it) {
+      ss << (*it)->usage() << "\n";
+    }
+    for (auto it = begin(options); it != end(options); ++it) {
+      ss << (*it)->usage() << "\n";
+    }
 
-                  template <typename T,
-                            typename = std::enable_if_t<
-                                is_position_bind_value_type_v<T>>>
-                  void add_position_arg(T& bind) {
-                    position_args.emplace_back(std::ref(bind));
-                  }
-                  template <typename T,
-                            typename = std::enable_if_t<
-                                is_position_bind_value_type_v<T>>>
-                  void add_position_arg() {
-                    position_args.emplace_back(T{});
-                  }
+    return ss.str();
+  }
 
-                  std::string usage() {
-                    std::stringstream ss;
-                    ss << (program_name.empty() ? "?" : program_name)
-                       << " [OPTION]... ";
-                    if (not position_args.empty()) {
-                      ss << " [--] [args....]";
-                    }
-                    ss << "\n\n";
-                    ss << description << "\n\n";
-                    for (auto it = begin(flags); it != end(flags); ++it) {
-                      ss << (*it)->usage() << "\n";
-                    }
-                    for (auto it = begin(options); it != end(options); ++it) {
-                      ss << (*it)->usage() << "\n";
-                    }
+  std::pair<int /*exit code*/, std::string /*error message*/> parse(
+      int argc,
+      const char* argv[]);
 
-                    return ss.str();
-                  }
+  template <typename T,
+            typename = std::enable_if_t<std::is_same_v<T, char> ||
+                                        std::is_same_v<T, std::string>>>
+  std::optional<Flag*> get_flag(T flag) {
+    auto it = find_if(begin(flags), end(flags),
+                      [flag](auto const& f) { return f->is_my_flag(flag); });
+    if (it != end(flags)) {
+      return (*it).get();
+    }
+    return {};
+  }
+  template <typename T,
+            typename = std::enable_if_t<std::is_same_v<T, char> ||
+                                        std::is_same_v<T, std::string>>>
+  std::optional<Option*> get_option(T opt) {
+    auto it = find_if(begin(options), end(options),
+                      [opt](auto const& f) { return f->is_my_option(opt); });
+    if (end(options) != it) {
+      return (*it).get();
+    }
+    return {};
+  }
 
-                  std::pair<int /*exit code*/, std::string /*error message*/>
-                  parse(int argc, const char* argv[]);
+ private:
+  std::string description{};
+  std::string program_name{};
 
-                  template <typename T,
-                            typename = std::enable_if_t<
-                                std::is_same_v<T, char> ||
-                                std::is_same_v<T, std::string>>>
-                  std::optional<Flag*> get_flag(T flag) {
-                    auto it = find_if(
-                        begin(flags), end(flags),
-                        [flag](auto const& f) { return f->is_my_flag(flag); });
-                    if (it != end(flags)) {
-                      return (*it).get();
-                    }
-                    return {};
-                  }
-                  template <typename T,
-                            typename = std::enable_if_t<
-                                std::is_same_v<T, char> ||
-                                std::is_same_v<T, std::string>>>
-                  std::optional<Option*> get_option(T opt) {
-                    auto it = find_if(
-                        begin(options), end(options),
-                        [opt](auto const& f) { return f->is_my_option(opt); });
-                    if (end(options) != it) {
-                      return (*it).get();
-                    }
-                    return {};
-                  }
+  std::vector<std::unique_ptr<Flag>> flags{};
+  std::vector<std::unique_ptr<Option>> options{};
 
-                 private:
-                  std::string description{};
-                  std::string program_name{};
+  std::vector<
+      std::variant<std::reference_wrapper<std::string>,
+                   std::reference_wrapper<std::vector<std::string>>,
+                   std::reference_wrapper<std::map<std::string, std::string>>,
+                   std::string,
+                   std::vector<std::string>,
+                   std::map<std::string, std::string>>>
+      position_args;
+};
 
-                  std::vector<std::unique_ptr<Flag>> flags{};
-                  std::vector<std::unique_ptr<Option>> options{};
-
-                  std::vector<std::variant<
-                      std::reference_wrapper<std::string>,
-                      std::reference_wrapper<std::vector<std::string>>,
-                      std::reference_wrapper<
-                          std::map<std::string, std::string>>,
-                      std::string,
-                      std::vector<std::string>,
-                      std::map<std::string, std::string>>>
-                      position_args;
-                };
-
-                }  // namespace argparse
+}  // namespace argparse
 
 #endif  // __ARGPARSE_CPP_H__
