@@ -64,6 +64,25 @@ std::pair<int, std::string> ArgParser::parse(int argc, const char* argv[]) {
 
             bool revisit = false;
             std::visit(overloaded{
+                    [&current_position_it, &curr_arg](std::string &x) -> std::pair<int, std::string> {
+                        x = curr_arg;
+                        current_position_it++;
+                        return {0, ""};
+                    },
+                    [&current_position_it, &curr_arg](std::vector<std::string> &x) -> std::pair<int, std::string> {
+                        x.push_back(curr_arg);
+                        return {0, ""};
+                    },
+                    [&revisit, &current_position_it, &curr_arg](std::map<std::string, std::string> &x) -> std::pair<int, std::string> {
+                        auto const i = curr_arg.find('=');
+                        if (i == std::string::npos) {
+                            current_position_it++;
+                            revisit = true;
+                        } else {
+                            x.emplace(curr_arg.substr(0, i), curr_arg.substr(i+1));
+                        }
+                        return {0, ""};
+                    },
                     [&current_position_it, &curr_arg](std::reference_wrapper<std::string> &x) -> std::pair<int, std::string> {
                         x.get() = curr_arg;
                         current_position_it++;
@@ -170,6 +189,9 @@ std::pair<int, std::string> ArgParser::parse(int argc, const char* argv[]) {
 
     for (;current != command_line_args.end(); current++) {
        auto [code, err_msg] = std::visit(overloaded{
+               [&current]<typename T>(T &x) -> std::pair<int, std::string> {
+                   return insert_or_replace_value(x, *current);
+               },
                [&current]<typename T>(std::reference_wrapper<T> &x) -> std::pair<int, std::string> {
                    return insert_or_replace_value(x.get(), *current);
                },
