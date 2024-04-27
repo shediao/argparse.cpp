@@ -130,16 +130,16 @@ std::pair<ArgParser::ParseErrorCode, std::string> ArgParser::parse(int argc, con
         } else if (is_long_opt(curr_arg)) {
             // long
             if (auto i = curr_arg.find('=', 2); i != std::string::npos) {
-                std::string option = curr_arg.substr(2,i);
+                std::string option = curr_arg.substr(2,i-2);
                 if (auto long_opt = get_option(option); long_opt.has_value()) {
                     (*long_opt)->hit(option, curr_arg.substr(i+1));
                 } else {
                     std::stringstream ss;
-                    ss << "invalid option -- -" << option;
+                    ss << "invalid option -- --" << option;
                     return {PARSE_FAILURE, ss.str()};
                 }
             } else {
-                std::string option = curr_arg.substr(2,i);
+                std::string option = curr_arg.substr(2);
                 if (auto long_flag = get_flag(option); long_flag.has_value()) {
                     (*long_flag)->hit(option);
                 } else if (auto long_opt = get_option(option); long_opt.has_value()) {

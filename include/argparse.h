@@ -8,6 +8,9 @@
 //  3. argparse.cpp is interface library
 //  4. accept long options recognize unambiguous abbreviations of those options.
 //  5. environment bind
+//  6. Contents that qualify option values, such as ranges, lists, etc.
+//  7. help info & usage
+//  8. pargram name
 
 #include <assert.h>
 #include <algorithm>
@@ -91,7 +94,9 @@ namespace {
 
 
     //**********************************
-    bool startswith(std::string const& str, std::string const& prefix) {
+    class StringUtil {
+    public:
+    inline static bool startswith(std::string const& str, std::string const& prefix) {
         if (str.length() < prefix.length()) {
             return false;
         }
@@ -104,7 +109,7 @@ namespace {
         }
         return true;
     }
-    bool endswith(std::string const& str, std::string const& suffix) {
+    inline static bool endswith(std::string const& str, std::string const& suffix) {
         if (str.length() < suffix.length()) {
             return false;
         }
@@ -117,7 +122,7 @@ namespace {
         }
         return true;
     }
-    std::vector<std::string> split(std::string const& s, char delimiter, int number = 0) {
+    inline static std::vector<std::string> split(std::string const& s, char delimiter, int number = 0) {
         std::vector<std::string> result;
         std::stringstream ss{s};
         std::string token;
@@ -132,17 +137,18 @@ namespace {
         return result;
     }
 
-    std::pair<std::string, std::string> split2(std::string const&s, char delimiter){
+    inline static std::pair<std::string, std::string> split2(std::string const&s, char delimiter){
         auto it = find(s.begin(), s.end(), delimiter);
         return {std::string(s.begin(), it), std::string(it == s.end() ? s.end() : it, s.end())};
     }
 
-    std::string trim(std::string const& str) {
+    inline static std::string trim(std::string const& str) {
         std::string ret{str};
         ret.erase(ret.begin(), find_if( begin(ret), end(ret), [](unsigned char c){ return !std::isspace(c); }));
         ret.erase(find_if( rbegin(ret), rend(ret), [](unsigned char c){ return !std::isspace(c); }).base(), ret.end());
         return ret;
     }
+    };
 
     // bool
     template <typename T, std::enable_if_t<std::is_same_v<bool, T>,int> = 0>
@@ -252,7 +258,7 @@ class Flag {
 
     template<typename T,typename = std::enable_if_t<is_flag_bind_value_type_v<T>>>
     Flag(std::string const& flag_desc, T&bind):value(bind){
-        auto all = split(flag_desc, ',');
+        auto all = StringUtil::split(flag_desc, ',');
         assert(!all.empty());
         for(auto const& f:all) {
             assert(f.size()>=2);
@@ -370,7 +376,7 @@ class Option {
 
     template<typename T,typename = std::enable_if_t<is_option_bind_value_type_v<T>>>
     Option(std::string const& option_desc, T&bind):value(bind){
-        auto all = split(option_desc, ',');
+        auto all = StringUtil::split(option_desc, ',');
         assert(!all.empty());
         for(auto const& f:all) {
             assert(f.size()>=2);
