@@ -81,32 +81,15 @@ TEST(ArgParser, parser0_3) {
   EXPECT_EQ(flag_3, true);
   EXPECT_EQ(flag_v, 4);
 
-  EXPECT_TRUE(parser.get_flag('a').has_value());
-  EXPECT_EQ(parser.get_flag('a').value()->as<bool>(), false);
-
-  EXPECT_TRUE(parser.get_flag('b').has_value());
-  EXPECT_EQ(parser.get_flag('b').value()->as<bool>(), true);
-
-  EXPECT_TRUE(parser.get_flag('c').has_value());
-  EXPECT_EQ(parser.get_flag('c').value()->as<bool>(), false);
-
-  EXPECT_TRUE(parser.get_flag('d').has_value());
-  EXPECT_EQ(parser.get_flag('d').value()->as<bool>(), false);
-
-  EXPECT_TRUE(parser.get_flag('h').has_value());
-  EXPECT_EQ(parser.get_flag('h').value()->as<bool>(), false);
-
-  EXPECT_TRUE(parser.get_flag('1').has_value());
-  EXPECT_EQ(parser.get_flag('1').value()->as<bool>(), true);
-
-  EXPECT_TRUE(parser.get_flag('2').has_value());
-  EXPECT_EQ(parser.get_flag('2').value()->as<bool>(), true);
-
-  EXPECT_TRUE(parser.get_flag('3').has_value());
-  EXPECT_EQ(parser.get_flag('3').value()->as<bool>(), true);
-
-  EXPECT_TRUE(parser.get_flag('v').has_value());
-  EXPECT_EQ(parser.get_flag('v').value()->as<int>(), 4);
+  EXPECT_EQ(parser.flag('a').as<bool>(), false);
+  EXPECT_EQ(parser.flag('b').as<bool>(), true);
+  EXPECT_EQ(parser.flag('c').as<bool>(), false);
+  EXPECT_EQ(parser.flag('d').as<bool>(), false);
+  EXPECT_EQ(parser.flag('h').as<bool>(), false);
+  EXPECT_EQ(parser.flag('1').as<bool>(), true);
+  EXPECT_EQ(parser.flag('2').as<bool>(), true);
+  EXPECT_EQ(parser.flag('3').as<bool>(), true);
+  EXPECT_EQ(parser.flag('v').as<int>(), 4);
 
   EXPECT_EQ(3, option_e.size());
   EXPECT_TRUE(option_e.find("e1") != option_e.end());

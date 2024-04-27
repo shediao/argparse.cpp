@@ -649,6 +649,19 @@ class Option {
 };
 
 class ArgParser {
+  class FlagNotFoundException : public std::exception {
+    public:
+      const char * what () {
+          return "Flag not found Exception";
+      }
+  };
+  class OptionNotFoundException : public std::exception {
+    public:
+      const char * what () {
+          return "Option not found Exception";
+      }
+  };
+
  public:
   ArgParser() {}
   explicit ArgParser(std::string const& description)
@@ -729,7 +742,32 @@ class ArgParser {
   template <typename T,
             typename = std::enable_if_t<std::is_same_v<T, char> ||
                                         std::is_same_v<T, std::string>>>
-  std::optional<Flag*> get_flag(T flag) {
+  Flag& flag(T const& flag) {
+    auto it = find_if(begin(flags), end(flags),
+                      [flag](auto const& f) { return f->is_my_flag(flag); });
+    if (it != end(flags)) {
+      return *((*it).get());
+    }
+    throw FlagNotFoundException{};
+  }
+
+  template <typename T,
+            typename = std::enable_if_t<std::is_same_v<T, char> ||
+                                        std::is_same_v<T, std::string>>>
+  Option& option(T const& opt) {
+    auto it = find_if(begin(options), end(options),
+                      [opt](auto const& f) { return f->is_my_option(opt); });
+    if (end(options) != it) {
+      return *((*it).get());
+    }
+    throw OptionNotFoundException{};
+  }
+
+ private:
+  template <typename T,
+            typename = std::enable_if_t<std::is_same_v<T, char> ||
+                                        std::is_same_v<T, std::string>>>
+  std::optional<Flag*> get_flag(T const& flag) {
     auto it = find_if(begin(flags), end(flags),
                       [flag](auto const& f) { return f->is_my_flag(flag); });
     if (it != end(flags)) {
@@ -740,7 +778,7 @@ class ArgParser {
   template <typename T,
             typename = std::enable_if_t<std::is_same_v<T, char> ||
                                         std::is_same_v<T, std::string>>>
-  std::optional<Option*> get_option(T opt) {
+  std::optional<Option*> get_option(T const& opt) {
     auto it = find_if(begin(options), end(options),
                       [opt](auto const& f) { return f->is_my_option(opt); });
     if (end(options) != it) {
@@ -749,7 +787,6 @@ class ArgParser {
     return {};
   }
 
- private:
   std::string description{};
   std::string program_name{};
 
