@@ -1,5 +1,5 @@
 
-#include <argparse.h>
+#include <argparse.hpp>
 #include <gtest/gtest.h>
 
 /* ****************************************************************************

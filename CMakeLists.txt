@@ -11,7 +11,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(include)
 
-add_library(argparse src/argparse.cpp)
+add_library(argparse INTERFACE include/argparse.hpp)
 
 add_subdirectory(third_party/googletest)
 
