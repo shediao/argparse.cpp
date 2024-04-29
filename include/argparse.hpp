@@ -474,6 +474,22 @@ class Flag : public Base {
   };
 
  public:
+  bool is_flag() const override { return true; };
+  bool is_option() const override { return false; };
+
+ protected:
+  template <typename T,
+            typename = std::enable_if_t<is_flag_bindable_value_v<T>>>
+  std::unique_ptr<Flag> static make_flag(std::string const& flag_desc, T& bind){
+    return std::unique_ptr<Flag>(new Flag(flag_desc, bind));
+  }
+
+  template <typename T,
+            typename = std::enable_if_t<is_flag_bindable_value_v<T>>>
+  std::unique_ptr<Flag> static make_flag(std::string const& flag_desc){
+    return std::unique_ptr<Flag>(new Flag(flag_desc, Base::identity<T>{}));
+  }
+
   template <typename T,
             typename = std::enable_if_t<is_flag_bindable_value_v<T>>>
   Flag(std::string const& flag_desc, T& bind)
@@ -482,14 +498,9 @@ class Flag : public Base {
   }
   template <typename T,
             typename = std::enable_if_t<is_flag_bindable_value_v<T>>>
-  Flag(std::string const& flag_desc) : Base(typename Base::identity<T>{}) {
+  Flag(std::string const& flag_desc, Base::identity<T>) : Base(typename Base::identity<T>{}) {
     Flag_init(flag_desc);
   }
-
-  bool is_flag() const override { return true; };
-  bool is_option() const override { return false; };
-
- protected:
   bool negate_contains(char flag) const {
     return find(begin(negate_short_names), end(negate_short_names), flag) !=
            end(negate_short_names);
@@ -618,6 +629,22 @@ class Option : public Base {
   };
 
  public:
+  bool is_flag() const override { return false; };
+  bool is_option() const override { return true; };
+
+ protected:
+  template <typename T,
+            typename = std::enable_if_t<is_option_bindable_value_v<T>>>
+  std::unique_ptr<Option> static make_option(std::string const& option_desc, T& bind){
+    return std::unique_ptr<Option>(new Option(option_desc, bind));
+  }
+
+  template <typename T,
+            typename = std::enable_if_t<is_option_bindable_value_v<T>>>
+  std::unique_ptr<Option> static make_option(std::string const& option_desc){
+    return std::unique_ptr<Option>(new Option(option_desc, Base::identity<T>{}));
+  }
+
   template <typename T,
             typename = std::enable_if_t<is_option_bindable_value_v<T>>>
   Option(std::string const& option_desc, T& bind)
@@ -626,14 +653,9 @@ class Option : public Base {
   }
   template <typename T,
             typename = std::enable_if_t<is_option_bindable_value_v<T>>>
-  Option(std::string const& option_desc) : Base(typename Base::identity<T>{}) {
+  Option(std::string const& option_desc, Base::identity<T>) : Base(typename Base::identity<T>{}) {
     Option_init(option_desc);
   }
-
-  bool is_flag() const override { return false; };
-  bool is_option() const override { return true; };
-
- protected:
   std::string usage() const override {
     std::stringstream ss;
     auto short_it = begin(short_names);
@@ -746,7 +768,7 @@ class ArgParser {
   template <typename T,
             typename = std::enable_if_t<is_flag_bindable_value_v<T>>>
   Flag& add_flag(std::string const& flag_desc, T& bind) {
-    auto x = std::make_unique<Flag>(flag_desc, bind);
+    auto x = Flag::make_flag(flag_desc, bind);
     auto p = x.get();
     all_options.push_back(std::move(x));
     return *p;
@@ -755,7 +777,7 @@ class ArgParser {
   template <typename T,
             typename = std::enable_if_t<is_option_bindable_value_v<T>>>
   Option& add_option(std::string const& option_desc, T& bind) {
-    auto x = std::make_unique<Option>(option_desc, bind);
+    auto x = Option::make_option(option_desc, bind);
     auto p = x.get();
     all_options.push_back(std::move(x));
     return *p;
