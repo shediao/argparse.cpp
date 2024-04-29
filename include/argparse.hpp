@@ -710,12 +710,17 @@ class Option : public Base {
   void Option_init(std::string const& option_desc) {
     auto all = StringUtil::split(option_desc, ',');
     assert(!all.empty());
-    for (auto const& f : all) {
-      assert(f.size() >= 2);
-      if (f[0] == '-' && f[1] != '-') {
-        short_names.push_back(f[1]);
-      } else if (f[0] == '-' && f[1] == '-' && f[2] != '-') {
-        long_names.push_back(f.substr(2));
+    for (auto f : all) {
+      if (StringUtil::startswith(f, "--")) {
+        f = f.substr(2);
+      } else if (StringUtil::startswith(f, "-")) {
+        f = f.substr(1);
+      }
+      assert(!f.empty());
+      if (f.length() > 1) {
+        long_names.push_back(f);
+      } else if (f.length() == 1) {
+        short_names.push_back(f[0]);
       }
     }
   }
