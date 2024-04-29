@@ -38,18 +38,18 @@ TEST(ArgParser, parser0_3) {
   std::string option_o;
 
   argparse::ArgParser parser;
-  parser.add_flag("-a", flag_a);
-  parser.add_flag("-b", flag_b);
-  parser.add_flag("-c", flag_c);
-  parser.add_flag("-d", flag_d);
-  parser.add_flag("-h,--help", flag_h);
-  parser.add_flag("-1", flag_1);
-  parser.add_flag("-2", flag_2);
-  parser.add_flag("-3", flag_3);
-  parser.add_flag("-v,--verbose", flag_v);
-  parser.add_option("-e,--env", option_e);
-  parser.add_option("-f,--file", option_f);
-  parser.add_option("-o,--output", option_o);
+  parser.add_flag("a", flag_a);
+  parser.add_flag("b", flag_b);
+  parser.add_flag("c", flag_c);
+  parser.add_flag("d", flag_d);
+  parser.add_flag("h,help", flag_h);
+  parser.add_flag("1", flag_1);
+  parser.add_flag("2", flag_2);
+  parser.add_flag("3", flag_3);
+  parser.add_flag("v,verbose", flag_v);
+  parser.add_option("e,env", option_e);
+  parser.add_option("f,file", option_f);
+  parser.add_option("o,output", option_o);
 
   std::vector<const char*> cmd2{"test1",
                                 "-1",
@@ -90,6 +90,26 @@ TEST(ArgParser, parser0_3) {
   EXPECT_EQ(parser.flag('2').as<bool>(), true);
   EXPECT_EQ(parser.flag('3').as<bool>(), true);
   EXPECT_EQ(parser.flag('v').as<int>(), 4);
+
+  EXPECT_EQ(parser['a'].as<bool>(), false);
+  EXPECT_EQ(parser['b'].as<bool>(), true);
+  EXPECT_EQ(parser['c'].as<bool>(), false);
+  EXPECT_EQ(parser['d'].as<bool>(), false);
+  EXPECT_EQ(parser['h'].as<bool>(), false);
+  EXPECT_EQ(parser['1'].as<bool>(), true);
+  EXPECT_EQ(parser['2'].as<bool>(), true);
+  EXPECT_EQ(parser['3'].as<bool>(), true);
+  EXPECT_EQ(parser['v'].as<int>(), 4);
+
+  EXPECT_EQ(parser["a"].as<bool>(), false);
+  EXPECT_EQ(parser["b"].as<bool>(), true);
+  EXPECT_EQ(parser["c"].as<bool>(), false);
+  EXPECT_EQ(parser["d"].as<bool>(), false);
+  EXPECT_EQ(parser["h"].as<bool>(), false);
+  EXPECT_EQ(parser["1"].as<bool>(), true);
+  EXPECT_EQ(parser["2"].as<bool>(), true);
+  EXPECT_EQ(parser["3"].as<bool>(), true);
+  EXPECT_EQ(parser["v"].as<int>(), 4);
 
   EXPECT_EQ(3, option_e.size());
   EXPECT_TRUE(option_e.find("e1") != option_e.end());

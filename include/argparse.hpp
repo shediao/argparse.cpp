@@ -3,14 +3,14 @@
 #define __ARGPARSE_CPP_H__
 
 //  TODO:
-//  1. support POSIXLY_CORRECT
-//  2. c++17
-//  3. argparse.cpp is interface library
-//  4. accept long options recognize unambiguous abbreviations of those options.
-//  5. environment bind
-//  6. Contents that qualify option values, such as ranges, lists, etc.
-//  7. help info & usage
-//  8. pargram name
+//     1. support POSIXLY_CORRECT
+// [√] 2. c++17
+// [√] 3. argparse.cpp is interface library
+//     4. accept long options recognize unambiguous abbreviations of those options.
+//     5. environment bind
+//     6. Contents that qualify option values, such as ranges, lists, etc.
+// [√] 7. help info & usage
+// [√] 8. pargram name
 
 #include <assert.h>
 #include <algorithm>
@@ -555,21 +555,34 @@ class Flag : public Base {
   void Flag_init(std::string const& flag_desc) {
     auto all = StringUtil::split(flag_desc, ',');
     assert(!all.empty());
-    for (auto const& f : all) {
-      assert(f.size() >= 2);
+    for (auto f : all) {
+      bool is_negate{false};
+      assert(!f.empty());
+
       if (f[0] == '!') {
-        assert(f[1] == '-');
-        if (f[1] == '-' && f[2] != '-') {
-          negate_short_names.push_back(f[2]);
-        } else if (f[1] == '-' && f[2] == '-' && f[3] != '-') {
-          negate_long_names.push_back(f.substr(3));
+        is_negate = true;
+        f = f.substr(1);
+      }
+
+      if (StringUtil::startswith(f, "--")) {
+        f = f.substr(2);
+      } else if (StringUtil::startswith(f, "-")) {
+        f = f.substr(1);
+      }
+
+      assert(!f.empty());
+      assert(f[0]!='-');
+      if (f.length() > 1) {
+        if (is_negate) {
+            negate_long_names.push_back(f);
+        } else {
+            long_names.push_back(f);
         }
-      } else {
-        assert(f[0] == '-');
-        if (f[0] == '-' && f[1] != '-') {
-          short_names.push_back(f[1]);
-        } else if (f[0] == '-' && f[1] == '-' && f[2] != '-') {
-          long_names.push_back(f.substr(2));
+      } else if (f.length() == 1) {
+        if (is_negate) {
+          negate_short_names.push_back(f[0]);
+        } else {
+          short_names.push_back(f[0]);
         }
       }
     }
@@ -985,28 +998,68 @@ class ArgParser {
     return {0, ""};
   }
 
-  template <typename T,
-            typename = std::enable_if_t<std::is_same_v<T, char> ||
-                                        std::is_same_v<T, std::string>>>
-  Flag& flag(T const& flag) {
+  Base& operator[](char f) {
     auto it = find_if(
         begin(all_options), end(all_options),
-        [flag](auto const& f) { return f->is_flag() && f->contains(flag); });
+        [f](auto const& f1) { return f1->contains(f); });
+    if (it != end(all_options)) {
+      return *((*it).get());
+    }
+    throw FlagNotFoundException{};
+  }
+  Base& operator[](std::string const& f) {
+    auto it = find_if(
+        begin(all_options), end(all_options),
+        [&f](auto const& f1) { return f1->contains(f); });
+    if (it != end(all_options)) {
+      return *((*it).get());
+    }
+    if (f.length() == 1) {
+      return operator[](f[0]);
+    }
+    throw FlagNotFoundException{};
+  }
+
+  Flag& flag(char f) {
+    auto it = find_if(
+        begin(all_options), end(all_options),
+        [f](auto const& f1) { return f1->is_flag() && f1->contains(f); });
     if (it != end(all_options)) {
       return *static_cast<Flag*>((*it).get());
     }
     throw FlagNotFoundException{};
   }
+  Flag& flag(std::string const& f) {
+    auto it = find_if(
+        begin(all_options), end(all_options),
+        [&f](auto const& f1) { return f1->is_flag() && f1->contains(f); });
+    if (it != end(all_options)) {
+      return *static_cast<Flag*>((*it).get());
+    }
+    if (f.length() == 1) {
+      return flag(f[0]);
+    }
+    throw FlagNotFoundException{};
+  }
 
-  template <typename T,
-            typename = std::enable_if_t<std::is_same_v<T, char> ||
-                                        std::is_same_v<T, std::string>>>
-  Option& option(T const& opt) {
+  Option& option(char opt) {
     auto it = find_if(
         begin(all_options), end(all_options),
         [opt](auto const& f) { return f->is_option() && f->contains(opt); });
     if (end(all_options) != it) {
       return *static_cast<Option*>((*it).get());
+    }
+    throw OptionNotFoundException{};
+  }
+  Option& option(std::string const& opt) {
+    auto it = find_if(
+        begin(all_options), end(all_options),
+        [&opt](auto const& f) { return f->is_option() && f->contains(opt); });
+    if (end(all_options) != it) {
+      return *static_cast<Option*>((*it).get());
+    }
+    if (opt.length() == 1) {
+      return option(opt[0]);
     }
     throw OptionNotFoundException{};
   }
