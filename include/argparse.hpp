@@ -346,6 +346,31 @@ std::pair<int, std::string> insert_or_replace_value(
 }  // namespace
 
 class Base {
+
+  template <typename T>
+  class DefaultValueVisitor{
+   public:
+    DefaultValueVisitor(T const& def):default_value(def) { }
+
+    template <typename U>
+    void operator() (U& val) {
+      if constexpr (is_reference_wrapper_v<U>) {
+        if constexpr (std::is_assignable_v<decltype(val.get()), decltype(default_value)>) {
+          val.get() = default_value;
+        } else {
+          assert(false);
+        }
+      } else {
+        if constexpr (std::is_assignable_v<decltype(val), decltype(default_value)>) {
+          val = default_value;
+        } else {
+          assert(false);
+        }
+      }
+    }
+   private:
+    T const& default_value;
+  };
   friend class ArgParser;
 
  public:
@@ -363,6 +388,16 @@ class Base {
 
   Base& help(std::string const& help) {
     help_msg = help;
+    return *this;
+  }
+
+  Base& set_default(std::string const& def_val) {
+    std::visit(DefaultValueVisitor(def_val), value);
+    return *this;
+  }
+  template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
+  Base& set_default(T const& def_val) {
+    std::visit(DefaultValueVisitor(def_val), value);
     return *this;
   }
 
