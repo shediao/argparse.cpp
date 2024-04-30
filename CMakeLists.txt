@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.16)
 
 project(argparse.cpp)
 
@@ -11,7 +11,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(include)
 
-add_library(argparse INTERFACE include/argparse.hpp)
+add_library(argparse INTERFACE)
 
 add_subdirectory(third_party/googletest)
 
