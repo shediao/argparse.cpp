@@ -1,6 +1,92 @@
 #include "argparse.hpp"
 #include <gtest/gtest.h>
 
+TEST(Base, count0) {
+  argparse::ArgParser parser;
+  bool is_debug{false};
+  parser.add_flag("d,debug,!r,!release", is_debug);
+
+  ASSERT_EQ(0, parser["d"].count());
+
+  std::vector<const char*> cmd{"argparser", "-d", "--debug"};
+  parser.parse(cmd.size(), cmd.data());
+
+  ASSERT_TRUE(is_debug);
+  ASSERT_EQ(2, parser["d"].count());
+
+  ASSERT_TRUE(parser["debug"].as<bool>());
+  ASSERT_THROW(parser["debug"].as<int>(), std::bad_variant_access);
+}
+
+TEST(Base, count1) {
+  argparse::ArgParser parser;
+  bool is_debug{false};
+  parser.add_flag("d,debug,!r,!release", is_debug);
+
+  ASSERT_EQ(0, parser["d"].count());
+
+  std::vector<const char*> cmd{"argparser", "-d", "--debug", "-r", "--release", "-d"};
+  parser.parse(cmd.size(), cmd.data());
+
+  ASSERT_TRUE(is_debug);
+  ASSERT_EQ(5, parser["d"].count());
+
+  ASSERT_TRUE(parser["debug"].as<bool>());
+  ASSERT_THROW(parser["debug"].as<int>(), std::bad_variant_access);
+}
+
+
+TEST(Base, is_flag){
+  argparse::ArgParser parser;
+  parser.add_flag<bool>("d,debug,!r,!release");
+  parser.add_option<std::string>("type");
+
+  ASSERT_TRUE(parser["debug"].is_flag());
+  ASSERT_FALSE(parser["type"].is_flag());
+
+  ASSERT_FALSE(parser["debug"].is_option());
+  ASSERT_TRUE(parser["type"].is_option());
+}
+
+TEST(Base, as) {
+  argparse::ArgParser parser;
+  bool verbose{false};
+  parser.add_flag("v,verbose", verbose);
+  parser.add_flag<bool>("d,debug,!r,!release");
+  parser.add_option<std::string>("type");
+
+  ASSERT_FALSE(parser["verbose"].as<bool>());
+  ASSERT_FALSE(parser["debug"].as<bool>());
+  ASSERT_EQ(parser["type"].as<std::string>(), "");
+
+  ASSERT_THROW(parser["debug"].as<int>(), std::bad_variant_access);
+  ASSERT_THROW(parser["type"].as<int>(), std::bad_variant_access);
+  ASSERT_THROW(parser["verbose"].as<int>(), std::bad_variant_access);
+}
+
+TEST(Base, as1) {
+  argparse::ArgParser parser;
+  bool verbose{false};
+  parser.add_flag("v,verbose", verbose);
+  parser.add_option<std::vector<std::string>>("i,input");
+
+  ASSERT_THROW(parser["input"].as<std::string>(), std::bad_variant_access);
+  ASSERT_TRUE(parser["input"].as<std::vector<std::string>>().empty());
+
+
+  std::vector<const char*> cmd{"argparser", "-i", "file1", "--input", "file2", "-v"};
+  auto [ret, err] = parser.parse(cmd.size(), cmd.data());
+  ASSERT_EQ(ret, 0);
+  ASSERT_EQ("", err);
+
+  ASSERT_FALSE(parser["input"].as<std::vector<std::string>>().empty());
+  auto& inputs = parser["input"].as<std::vector<std::string>>();
+
+  ASSERT_EQ(inputs.size(), 2);
+  ASSERT_EQ("file1", inputs[0]);
+  ASSERT_EQ("file2", inputs[1]);
+}
+
 TEST(ArgParser, parse0) {
   argparse::ArgParser parser1;
   std::vector<const char*> cmd{"test0"};
@@ -81,25 +167,25 @@ TEST(ArgParser, parser0_3) {
   EXPECT_EQ(flag_3, true);
   EXPECT_EQ(flag_v, 4);
 
-  EXPECT_EQ(parser.flag('a').as<bool>(), false);
-  EXPECT_EQ(parser.flag('b').as<bool>(), true);
-  EXPECT_EQ(parser.flag('c').as<bool>(), false);
-  EXPECT_EQ(parser.flag('d').as<bool>(), false);
-  EXPECT_EQ(parser.flag('h').as<bool>(), false);
-  EXPECT_EQ(parser.flag('1').as<bool>(), true);
-  EXPECT_EQ(parser.flag('2').as<bool>(), true);
-  EXPECT_EQ(parser.flag('3').as<bool>(), true);
-  EXPECT_EQ(parser.flag('v').as<int>(), 4);
+  EXPECT_EQ(parser.flag("a").as<bool>(), false);
+  EXPECT_EQ(parser.flag("b").as<bool>(), true);
+  EXPECT_EQ(parser.flag("c").as<bool>(), false);
+  EXPECT_EQ(parser.flag("d").as<bool>(), false);
+  EXPECT_EQ(parser.flag("h").as<bool>(), false);
+  EXPECT_EQ(parser.flag("1").as<bool>(), true);
+  EXPECT_EQ(parser.flag("2").as<bool>(), true);
+  EXPECT_EQ(parser.flag("3").as<bool>(), true);
+  EXPECT_EQ(parser.flag("v").as<int>(), 4);
 
-  EXPECT_EQ(parser['a'].as<bool>(), false);
-  EXPECT_EQ(parser['b'].as<bool>(), true);
-  EXPECT_EQ(parser['c'].as<bool>(), false);
-  EXPECT_EQ(parser['d'].as<bool>(), false);
-  EXPECT_EQ(parser['h'].as<bool>(), false);
-  EXPECT_EQ(parser['1'].as<bool>(), true);
-  EXPECT_EQ(parser['2'].as<bool>(), true);
-  EXPECT_EQ(parser['3'].as<bool>(), true);
-  EXPECT_EQ(parser['v'].as<int>(), 4);
+  EXPECT_EQ(parser["a"].as<bool>(), false);
+  EXPECT_EQ(parser["b"].as<bool>(), true);
+  EXPECT_EQ(parser["c"].as<bool>(), false);
+  EXPECT_EQ(parser["d"].as<bool>(), false);
+  EXPECT_EQ(parser["h"].as<bool>(), false);
+  EXPECT_EQ(parser["1"].as<bool>(), true);
+  EXPECT_EQ(parser["2"].as<bool>(), true);
+  EXPECT_EQ(parser["3"].as<bool>(), true);
+  EXPECT_EQ(parser["v"].as<int>(), 4);
 
   EXPECT_EQ(parser["a"].as<bool>(), false);
   EXPECT_EQ(parser["b"].as<bool>(), true);

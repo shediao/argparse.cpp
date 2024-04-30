@@ -130,13 +130,13 @@ TEST(Cat, help) {
   using namespace std::literals::string_literals;
   EXPECT_EQ(cat_flags.show_all, parser.flag("show-all").as<bool>());
   EXPECT_EQ(cat_flags.number_nonblank, parser.flag("number-nonblank").as<bool>());
-  EXPECT_EQ(cat_flags.e, parser.flag('e').as<bool>());
+  EXPECT_EQ(cat_flags.e, parser.flag("e").as<bool>());
   EXPECT_EQ(cat_flags.show_ends, parser.flag("show-ends").as<bool>());
   EXPECT_EQ(cat_flags.number, parser.flag("number").as<bool>());
   EXPECT_EQ(cat_flags.squeeze_blank, parser.flag("squeeze-blank").as<bool>());
-  EXPECT_EQ(cat_flags.t, parser.flag('t').as<bool>());
+  EXPECT_EQ(cat_flags.t, parser.flag("t").as<bool>());
   EXPECT_EQ(cat_flags.show_tabs, parser.flag("show-tabs").as<bool>());
-  EXPECT_EQ(cat_flags.u, parser.flag('u').as<bool>());
+  EXPECT_EQ(cat_flags.u, parser.flag("u").as<bool>());
   EXPECT_EQ(cat_flags.show_nonprinting, parser.flag("show-nonprinting").as<bool>());
   EXPECT_EQ(cat_flags.help, parser.flag("help").as<bool>());
   EXPECT_EQ(cat_flags.version, parser.flag("version").as<bool>());
@@ -173,9 +173,9 @@ TEST(Cat, version) {
   EXPECT_EQ(cat_flags.show_ends, parser.flag("show-ends").as<bool>());
   EXPECT_EQ(cat_flags.number, parser.flag("number").as<bool>());
   EXPECT_EQ(cat_flags.squeeze_blank, parser.flag("squeeze-blank").as<bool>());
-  EXPECT_EQ(cat_flags.t, parser.flag('t').as<bool>());
+  EXPECT_EQ(cat_flags.t, parser.flag("t").as<bool>());
   EXPECT_EQ(cat_flags.show_tabs, parser.flag("show-tabs").as<bool>());
-  EXPECT_EQ(cat_flags.u, parser.flag('u').as<bool>());
+  EXPECT_EQ(cat_flags.u, parser.flag("u").as<bool>());
   EXPECT_EQ(cat_flags.show_nonprinting, parser.flag("show-nonprinting").as<bool>());
   EXPECT_EQ(cat_flags.help, parser.flag("help").as<bool>());
   EXPECT_EQ(cat_flags.version, parser.flag("version").as<bool>());

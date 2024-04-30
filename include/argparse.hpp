@@ -38,7 +38,7 @@ template <typename T>
 using is_reference_wrapper_t = typename is_reference_wrapper<T>::type;
 
 template <typename T>
-auto constexpr is_reference_wrapper_v = is_reference_wrapper<T>::value;
+inline constexpr bool is_reference_wrapper_v = is_reference_wrapper<T>::value;
 
 template <typename T, typename = void>
 struct is_flag_bindable_value : std::false_type {};
@@ -52,7 +52,7 @@ struct is_flag_bindable_value<
 template <typename T>
 using is_flag_bindable_value_t = typename is_flag_bindable_value<T>::type;
 template <typename T>
-auto constexpr is_flag_bindable_value_v = is_flag_bindable_value<T>::value;
+inline constexpr bool is_flag_bindable_value_v = is_flag_bindable_value<T>::value;
 
 template <typename T, typename = void>
 struct is_option_bindable_value : std::false_type {};
@@ -70,7 +70,7 @@ struct is_option_bindable_value<
 template <typename T>
 using is_option_bindable_value_t = typename is_option_bindable_value<T>::type;
 template <typename T>
-auto constexpr is_option_bindable_value_v = is_option_bindable_value<T>::value;
+inline constexpr bool is_option_bindable_value_v = is_option_bindable_value<T>::value;
 
 template <typename T, typename = void>
 struct is_bindable_value : std::false_type {};
@@ -88,7 +88,7 @@ struct is_bindable_value<
 template <typename T>
 using is_bindable_value_t = typename is_bindable_value<T>::type;
 template <typename T>
-auto constexpr is_bindable_value_v = is_bindable_value<T>::value;
+inline constexpr bool is_bindable_value_v = is_bindable_value<T>::value;
 
 template <typename T, typename = void>
 struct is_position_bindable_value : std::false_type {};
@@ -105,7 +105,7 @@ template <typename T>
 using is_position_bindable_value_t =
     typename is_position_bindable_value<T>::type;
 template <typename T>
-auto constexpr is_position_bindable_value_v =
+inline constexpr bool is_position_bindable_value_v =
     is_position_bindable_value<T>::value;
 
 // element_size_is_2
@@ -122,10 +122,10 @@ template <typename T>
 struct element_size_is_2<std::array<T, 2>> : public std::true_type {};
 
 template <typename T>
-auto constexpr static element_size_is_2_v = element_size_is_2<T>::value;
+inline constexpr bool element_size_is_2_v = element_size_is_2<T>::value;
 
 template <typename T>
-auto constexpr static is_bindable_noncontainer_value_v =
+inline constexpr bool is_bindable_noncontainer_value_v =
     std::is_same_v<bool, T> || std::is_same_v<int, T> ||
     std::is_same_v<double, T> || std::is_same_v<std::string, T> ||
     element_size_is_2_v<T>;
@@ -159,9 +159,8 @@ constexpr bool is_option_bindable_container_v =
     is_option_bindable_container<T>::value;
 
 //**********************************
-class StringUtil {
- public:
-  inline static bool startswith(std::string const& str,
+namespace StringUtil {
+  inline bool startswith(std::string const& str,
                                 std::string const& prefix) {
     if (str.length() < prefix.length()) {
       return false;
@@ -175,7 +174,7 @@ class StringUtil {
     }
     return true;
   }
-  inline static bool endswith(std::string const& str,
+  inline bool endswith(std::string const& str,
                               std::string const& suffix) {
     if (str.length() < suffix.length()) {
       return false;
@@ -189,7 +188,7 @@ class StringUtil {
     }
     return true;
   }
-  inline static std::vector<std::string> split(std::string const& s,
+  inline std::vector<std::string> split(std::string const& s,
                                                char delimiter,
                                                int number = 0) {
     std::vector<std::string> result;
@@ -207,14 +206,14 @@ class StringUtil {
     return result;
   }
 
-  inline static std::pair<std::string, std::string> split2(std::string const& s,
+  inline std::pair<std::string, std::string> split2(std::string const& s,
                                                            char delimiter) {
     auto it = find(s.begin(), s.end(), delimiter);
     return {std::string(s.begin(), it),
             std::string(it == s.end() ? s.end() : it, s.end())};
   }
 
-  inline static std::string trim(std::string const& str) {
+  inline std::string trim(std::string const& str) {
     std::string ret{str};
     ret.erase(ret.begin(), find_if(begin(ret), end(ret), [](unsigned char c) {
                 return !std::isspace(c);
@@ -225,19 +224,19 @@ class StringUtil {
               ret.end());
     return ret;
   }
-  inline static bool is_short_opt(std::string const& opt) {
+  inline bool is_short_opt(std::string const& opt) {
     return opt.size() >= 2 && opt[0] == '-' && opt[1] != '-';
   }
-  inline static bool is_long_opt(std::string const& opt) {
+  inline bool is_long_opt(std::string const& opt) {
     return opt.size() >= 3 && opt[0] == '-' && opt[1] == '-' && opt[2] != '-';
   }
-  inline static bool is_dash_dash(std::string const& opt) {
+  inline bool is_dash_dash(std::string const& opt) {
     return opt == "--";
   }
-  inline static bool is_position_arg(std::string const& str) {
+  inline bool is_position_arg(std::string const& str) {
     return !is_short_opt(str) && !is_long_opt(str) && !is_dash_dash(str);
   }
-};
+}
 
 // bool
 template <typename T, std::enable_if_t<std::is_same_v<bool, T>, int> = 0>
@@ -355,7 +354,7 @@ class Base {
   virtual bool is_option() const = 0;
 
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
-  T const& as() {
+  T const& as() const {
     if (std::holds_alternative<std::reference_wrapper<T>>(value)) {
       return std::get<std::reference_wrapper<T>>(value).get();
     }
@@ -370,6 +369,9 @@ class Base {
   int count() const { return hit_count; }
 
  protected:
+  Base(Base const&) = delete;
+  Base(Base &&) = delete;
+  Base& operator=(Base const&) = delete;
   template <typename T>
   struct identity {
     using type = T;
@@ -388,16 +390,11 @@ class Base {
                                           std::string const& val) = 0;
   virtual std::string usage() const = 0;
 
-  virtual bool contains(char short_name) const {
-    return end(short_names) !=
-           find(begin(short_names), end(short_names), short_name);
+  virtual bool contains(std::string const& name) const {
+    return end(flag_and_option_names) !=
+           find(begin(flag_and_option_names), end(flag_and_option_names), name);
   }
-  virtual bool contains(std::string const& long_name) const {
-    return end(long_names) !=
-           find(begin(long_names), end(long_names), long_name);
-  }
-  std::vector<char> short_names;
-  std::vector<std::string> long_names;
+  std::vector<std::string> flag_and_option_names;
   std::string help_msg;
   std::variant<std::reference_wrapper<bool>,
                std::reference_wrapper<int>,
@@ -501,27 +498,20 @@ class Flag : public Base {
   Flag(std::string const& flag_desc, Base::identity<T>) : Base(typename Base::identity<T>{}) {
     Flag_init(flag_desc);
   }
-  bool negate_contains(char flag) const {
-    return find(begin(negate_short_names), end(negate_short_names), flag) !=
-           end(negate_short_names);
-  }
   bool negate_contains(std::string const& flag) const {
-    return find(begin(negate_long_names), end(negate_long_names), flag) !=
-           end(negate_long_names);
+    return find(begin(negate_flag_names), end(negate_flag_names), flag) !=
+           end(negate_flag_names);
   }
 
-  bool contains(char flag) const override {
-    return Base::contains(flag) || negate_contains(flag);
-  }
   bool contains(std::string const& flag) const override {
     return Base::contains(flag) || negate_contains(flag);
   }
 
+  void hit(char const flag) override { hit(std::string(1,flag)); }
   void hit(std::string const& flag) override { hit_impl(flag); }
-  void hit(char flag) override { hit_impl(flag); }
-  std::pair<int, std::string> hit(char flag, std::string const& val) override {
-    assert(false);
-    return {1, "flag not hold a value"};
+  std::pair<int, std::string> hit(char const flag,
+                                  std::string const& val) override {
+    return hit(std::string(1,flag), val);
   }
   std::pair<int, std::string> hit(std::string const& flag,
                                   std::string const& val) override {
@@ -531,34 +521,27 @@ class Flag : public Base {
 
   std::string usage() const override {
     std::stringstream ss;
-    auto short_it = begin(short_names);
-    if (short_it != end(short_names)) {
-      ss << "  -" << *short_it;
-      short_it++;
-    }
-    for (; short_it != end(short_names); ++short_it) {
-      ss << ", -" << *short_it;
-    }
-
-    auto long_it = begin(long_names);
-    if (long_it != end(long_names)) {
-      if (short_names.empty()) {
-        ss << "  --" << *long_it;
+    auto it = begin(flag_and_option_names);
+    if (it != end(flag_and_option_names)) {
+      if (it->length() == 1) {
+        ss << "-" << *it;
       } else {
-        ss << ", --" << *long_it;
+        ss << "--" << *it;
       }
-      long_it++;
+      it++;
     }
-
-    for (; long_it != end(long_names); long_it++) {
-      ss << ", --" << *long_it;
+    if (it != end(flag_and_option_names)) {
+      if (it->length() == 1) {
+        ss << ",-" << *it;
+      } else {
+        ss << ",--" << *it;
+      }
+      it++;
     }
     ss << "\n";
-
     if (!help_msg.empty()) {
       ss << "         " << help_msg << "\n";
     }
-
     return ss.str();
   }
 
@@ -583,18 +566,10 @@ class Flag : public Base {
 
       assert(!f.empty());
       assert(f[0]!='-');
-      if (f.length() > 1) {
-        if (is_negate) {
-            negate_long_names.push_back(f);
-        } else {
-            long_names.push_back(f);
-        }
-      } else if (f.length() == 1) {
-        if (is_negate) {
-          negate_short_names.push_back(f[0]);
-        } else {
-          short_names.push_back(f[0]);
-        }
+      if (is_negate) {
+        negate_flag_names.push_back(f);
+      } else {
+        flag_and_option_names.push_back(f);
       }
     }
   }
@@ -605,8 +580,7 @@ class Flag : public Base {
   }
 
  private:
-  std::vector<char> negate_short_names{};
-  std::vector<std::string> negate_long_names{};
+  std::vector<std::string> negate_flag_names{};
 };
 
 class Option : public Base {
@@ -658,35 +632,30 @@ class Option : public Base {
   }
   std::string usage() const override {
     std::stringstream ss;
-    auto short_it = begin(short_names);
-    if (short_it != end(short_names)) {
-      ss << "  -" << *short_it;
-      short_it++;
-    }
-    for (; short_it != end(short_names); ++short_it) {
-      ss << ", -" << *short_it;
+    auto it = begin(flag_and_option_names);
+    if (it != end(flag_and_option_names)) {
+      if (it->length() == 1) {
+        ss << "-" << *it;
+      } else {
+        ss << "--" << *it;
+      }
+      it++;
     }
 
-    auto long_it = begin(long_names);
-    if (long_it != end(long_names)) {
-      if (short_names.empty()) {
-        ss << "  --" << *long_it;
+    if (it != end(flag_and_option_names)) {
+      if (it->length() == 1) {
+        ss << ",-" << *it;
       } else {
-        ss << ", --" << *long_it;
+        ss << ",--" << *it;
       }
-      long_it++;
+      it++;
+    }
+    if (val_help_msg.empty()) {
+      ss << "=<TEXT>";
+    } else {
+      ss << "=<" << val_help_msg << ">";
     }
 
-    for (; long_it != end(long_names); long_it++) {
-      ss << ", --" << *long_it;
-    }
-    if (!long_names.empty()) {
-      if (val_help_msg.empty()) {
-        ss << "=<TEXT>";
-      } else {
-        ss << "=<" << val_help_msg << ">";
-      }
-    }
     ss << "\n";
 
     if (!help_msg.empty()) {
@@ -696,15 +665,16 @@ class Option : public Base {
     return ss.str();
   }
 
-  std::pair<int, std::string> hit(char, std::string const& val) override {
-    return hit_impl(val);
-  }
   std::pair<int, std::string> hit(std::string const&,
                                   std::string const& val) override {
     return hit_impl(val);
   }
+  std::pair<int, std::string> hit(char,
+                                  std::string const& val) override {
+    return hit_impl(val);
+  }
   void hit(std::string const& flag) override { assert(false); }
-  void hit(char flag) override { assert(false); }
+  void hit(char const flag) override { assert(false); }
 
  private:
   void Option_init(std::string const& option_desc) {
@@ -717,11 +687,7 @@ class Option : public Base {
         f = f.substr(1);
       }
       assert(!f.empty());
-      if (f.length() > 1) {
-        long_names.push_back(f);
-      } else if (f.length() == 1) {
-        short_names.push_back(f[0]);
-      }
+      flag_and_option_names.push_back(f);
     }
   }
 
@@ -780,9 +746,27 @@ class ArgParser {
   }
 
   template <typename T,
+            typename = std::enable_if_t<is_flag_bindable_value_v<T>>>
+  Flag& add_flag(std::string const& flag_desc) {
+    auto x = Flag::make_flag<T>(flag_desc);
+    auto p = x.get();
+    all_options.push_back(std::move(x));
+    return *p;
+  }
+
+  template <typename T,
             typename = std::enable_if_t<is_option_bindable_value_v<T>>>
   Option& add_option(std::string const& option_desc, T& bind) {
     auto x = Option::make_option(option_desc, bind);
+    auto p = x.get();
+    all_options.push_back(std::move(x));
+    return *p;
+  }
+
+  template <typename T,
+            typename = std::enable_if_t<is_option_bindable_value_v<T>>>
+  Option& add_option(std::string const& option_desc) {
+    auto x = Option::make_option<T>(option_desc);
     auto p = x.get();
     all_options.push_back(std::move(x));
     return *p;
@@ -1025,15 +1009,6 @@ class ArgParser {
     return {0, ""};
   }
 
-  Base& operator[](char f) {
-    auto it = find_if(
-        begin(all_options), end(all_options),
-        [f](auto const& f1) { return f1->contains(f); });
-    if (it != end(all_options)) {
-      return *((*it).get());
-    }
-    throw FlagNotFoundException{};
-  }
   Base& operator[](std::string const& f) {
     auto it = find_if(
         begin(all_options), end(all_options),
@@ -1041,21 +1016,9 @@ class ArgParser {
     if (it != end(all_options)) {
       return *((*it).get());
     }
-    if (f.length() == 1) {
-      return operator[](f[0]);
-    }
     throw FlagNotFoundException{};
   }
 
-  Flag& flag(char f) {
-    auto it = find_if(
-        begin(all_options), end(all_options),
-        [f](auto const& f1) { return f1->is_flag() && f1->contains(f); });
-    if (it != end(all_options)) {
-      return *static_cast<Flag*>((*it).get());
-    }
-    throw FlagNotFoundException{};
-  }
   Flag& flag(std::string const& f) {
     auto it = find_if(
         begin(all_options), end(all_options),
@@ -1063,21 +1026,9 @@ class ArgParser {
     if (it != end(all_options)) {
       return *static_cast<Flag*>((*it).get());
     }
-    if (f.length() == 1) {
-      return flag(f[0]);
-    }
     throw FlagNotFoundException{};
   }
 
-  Option& option(char opt) {
-    auto it = find_if(
-        begin(all_options), end(all_options),
-        [opt](auto const& f) { return f->is_option() && f->contains(opt); });
-    if (end(all_options) != it) {
-      return *static_cast<Option*>((*it).get());
-    }
-    throw OptionNotFoundException{};
-  }
   Option& option(std::string const& opt) {
     auto it = find_if(
         begin(all_options), end(all_options),
@@ -1085,17 +1036,14 @@ class ArgParser {
     if (end(all_options) != it) {
       return *static_cast<Option*>((*it).get());
     }
-    if (opt.length() == 1) {
-      return option(opt[0]);
-    }
     throw OptionNotFoundException{};
   }
 
  private:
-  template <typename T,
-            typename = std::enable_if_t<std::is_same_v<T, char> ||
-                                        std::is_same_v<T, std::string>>>
-  std::optional<Flag*> get_flag(T const& flag) {
+  std::optional<Flag*> get_flag(char const flag) {
+    return get_flag(std::string(1, flag));
+  }
+  std::optional<Flag*> get_flag(std::string const& flag) {
     auto it = find_if(
         begin(all_options), end(all_options),
         [flag](auto const& f) { return f->is_flag() && f->contains(flag); });
@@ -1104,10 +1052,10 @@ class ArgParser {
     }
     return {};
   }
-  template <typename T,
-            typename = std::enable_if_t<std::is_same_v<T, char> ||
-                                        std::is_same_v<T, std::string>>>
-  std::optional<Option*> get_option(T const& opt) {
+  std::optional<Option*> get_option(char const opt) {
+    return get_option(std::string(1, opt));
+  }
+  std::optional<Option*> get_option(std::string const& opt) {
     auto it = find_if(
         begin(all_options), end(all_options),
         [opt](auto const& f) { return f->is_option() && f->contains(opt); });
