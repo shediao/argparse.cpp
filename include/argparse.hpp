@@ -772,6 +772,7 @@ class Positional : public Base {
   std::pair<int, std::string> hit(char short_name,
                                   std::string const& val) override {
     assert(false);
+    return {1, "flag not a value"};
   };
   std::pair<int, std::string> hit(std::string const& long_name,
                                   std::string const& val) override {
@@ -923,7 +924,7 @@ class ArgParser {
   std::string usage() {
     std::stringstream ss;
     ss << (program_name.empty() ? "?" : program_name) << " [OPTION]... ";
-    if (not any_of(begin(all_options), end(all_options),
+    if (!any_of(begin(all_options), end(all_options),
                    [](auto& o) { return o->is_positional(); })) {
       ss << " [--] [args....]";
     }
