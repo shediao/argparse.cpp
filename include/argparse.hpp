@@ -1,6 +1,6 @@
 
-#ifndef __ARGPARSE_CPP_H__
-#define __ARGPARSE_CPP_H__
+#ifndef ARGPARSE_CPP_H_
+#define ARGPARSE_CPP_H_
 
 //  TODO:
 //     1. support POSIXLY_CORRECT
@@ -17,7 +17,7 @@
 //     11. top100 linux command test
 //     12. subcommand support
 
-#include <assert.h>
+#include <cassert>
 #include <algorithm>
 #include <charconv>
 #include <iterator>
@@ -27,6 +27,7 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -180,19 +181,6 @@ inline bool startswith(std::string const& str, std::string const& prefix) {
   }
   return true;
 }
-inline bool endswith(std::string const& str, std::string const& suffix) {
-  if (str.length() < suffix.length()) {
-    return false;
-  }
-  auto it = str.rbegin();
-  auto sit = suffix.rbegin();
-  for (; sit != suffix.rend(); it++, sit++) {
-    if (*it != *sit) {
-      return false;
-    }
-  }
-  return true;
-}
 inline std::vector<std::string> split(std::string const& s,
                                       char delimiter,
                                       int number = 0) {
@@ -211,24 +199,6 @@ inline std::vector<std::string> split(std::string const& s,
   return result;
 }
 
-inline std::pair<std::string, std::string> split2(std::string const& s,
-                                                  char delimiter) {
-  auto it = find(s.begin(), s.end(), delimiter);
-  return {std::string(s.begin(), it),
-          std::string(it == s.end() ? s.end() : it, s.end())};
-}
-
-inline std::string trim(std::string const& str) {
-  std::string ret{str};
-  ret.erase(ret.begin(), find_if(begin(ret), end(ret), [](unsigned char c) {
-              return !std::isspace(c);
-            }));
-  ret.erase(find_if(rbegin(ret), rend(ret),
-                    [](unsigned char c) { return !std::isspace(c); })
-                .base(),
-            ret.end());
-  return ret;
-}
 inline bool is_short_opt(std::string const& opt) {
   return opt.size() >= 2 && opt[0] == '-' && opt[1] != '-';
 }
@@ -354,7 +324,7 @@ class Base {
   template <typename T>
   class DefaultValueVisitor {
    public:
-    DefaultValueVisitor(T const& def) : default_value(def) {}
+    explicit DefaultValueVisitor(T const& def) : default_value(def) {}
 
     template <typename U>
     void operator()(U& val) {
@@ -382,9 +352,9 @@ class Base {
 
  public:
   virtual ~Base() = default;
-  virtual bool is_flag() const = 0;
-  virtual bool is_option() const = 0;
-  virtual bool is_positional() const = 0;
+  [[nodiscard]] virtual bool is_flag() const = 0;
+  [[nodiscard]] virtual bool is_option() const = 0;
+  [[nodiscard]] virtual bool is_positional() const = 0;
 
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
   T const& as() const {
@@ -434,21 +404,22 @@ class Base {
     return *this;
   }
 
-  int count() const { return hit_count; }
+  [[nodiscard]] int count() const { return hit_count; }
   template <typename T>
   struct identity {
     using type = T;
   };
 
- protected:
   Base(Base const&) = delete;
   Base(Base&&) = delete;
   Base& operator=(Base const&) = delete;
+
+ protected:
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
-  Base(identity<T> t, T& bind) : value(std::ref(bind)) {}
+  Base(identity<T>, T& bind) : value(std::ref(bind)) {}
 
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
-  Base(identity<T> t) : value(T{}) {}
+  explicit Base(identity<T>) : value(T{}) {}
 
   virtual void hit(char short_name) = 0;
   virtual void hit(std::string const& long_name) = 0;
@@ -456,9 +427,9 @@ class Base {
                                           std::string const& val) = 0;
   virtual std::pair<int, std::string> hit(std::string const& long_name,
                                           std::string const& val) = 0;
-  virtual std::string usage() const = 0;
+  [[nodiscard]] virtual std::string usage() const = 0;
 
-  virtual bool contains(std::string const& name) const {
+  [[nodiscard]] virtual bool contains(std::string const& name) const {
     return end(flag_and_option_names) !=
            find(begin(flag_and_option_names), end(flag_and_option_names), name);
   }
@@ -523,14 +494,14 @@ class Flag : public Base {
               std::enable_if_t<!is_flag_bindable_value_v<T> &&
                                    !is_reference_wrapper_v<T>,
                                bool> = true>
-    void operator()(T& x) {
+    void operator()(T&) {
       assert(false);
     }
     template <typename T,
               std::enable_if_t<!is_flag_bindable_value_v<T> &&
                                    is_reference_wrapper_v<T>,
                                bool> = true>
-    void operator()(T& x) {
+    void operator()(T&) {
       assert(false);
     }
 
@@ -539,9 +510,9 @@ class Flag : public Base {
   };
 
  public:
-  bool is_flag() const override { return true; };
-  bool is_option() const override { return false; };
-  bool is_positional() const override { return false; };
+  [[nodiscard]] bool is_flag() const override { return true; };
+  [[nodiscard]] bool is_option() const override { return false; };
+  [[nodiscard]] bool is_positional() const override { return false; };
 
  protected:
   template <typename T,
@@ -569,12 +540,12 @@ class Flag : public Base {
       : Base(typename Base::identity<T>{}) {
     Flag_init(flag_desc);
   }
-  bool negate_contains(std::string const& flag) const {
+  [[nodiscard]] bool negate_contains(std::string const& flag) const {
     return find(begin(negate_flag_names), end(negate_flag_names), flag) !=
            end(negate_flag_names);
   }
 
-  bool contains(std::string const& flag) const override {
+  [[nodiscard]] bool contains(std::string const& flag) const override {
     return Base::contains(flag) || negate_contains(flag);
   }
 
@@ -590,7 +561,7 @@ class Flag : public Base {
     return {1, "flag not hold a value"};
   }
 
-  std::string usage() const override {
+  [[nodiscard]] std::string usage() const override {
     std::stringstream ss;
     auto it = begin(flag_and_option_names);
     if (it != end(flag_and_option_names)) {
@@ -660,7 +631,7 @@ class Option : public Base {
   friend class ArgParser;
 
   struct ValueVisitor {
-    ValueVisitor(std::string const& opt_val) : opt_val(opt_val) {}
+    explicit ValueVisitor(std::string const& opt_val) : opt_val(opt_val) {}
     template <typename T,
               std::enable_if_t<is_option_bindable_value_v<T>, bool> = true>
     std::pair<int, std::string> operator()(T& x) {
@@ -676,9 +647,9 @@ class Option : public Base {
   };
 
  public:
-  bool is_flag() const override { return false; };
-  bool is_option() const override { return true; };
-  bool is_positional() const override { return false; };
+  [[nodiscard]] bool is_flag() const override { return false; };
+  [[nodiscard]] bool is_option() const override { return true; };
+  [[nodiscard]] bool is_positional() const override { return false; };
 
  protected:
   template <typename T,
@@ -707,7 +678,7 @@ class Option : public Base {
       : Base(typename Base::identity<T>{}) {
     Option_init(option_desc);
   }
-  std::string usage() const override {
+  [[nodiscard]] std::string usage() const override {
     std::stringstream ss;
     auto it = begin(flag_and_option_names);
     if (it != end(flag_and_option_names)) {
@@ -780,9 +751,9 @@ class Positional : public Base {
   friend class ArgParser;
 
  public:
-  bool is_flag() const override { return false; };
-  bool is_option() const override { return false; };
-  bool is_positional() const override { return true; };
+  [[nodiscard]] bool is_flag() const override { return false; };
+  [[nodiscard]] bool is_option() const override { return false; };
+  [[nodiscard]] bool is_positional() const override { return true; };
 
  protected:
   template <typename T>
@@ -839,7 +810,7 @@ class Positional : public Base {
     return {0, ""};
   };
 
-  std::string usage() const override { return ""; };
+  [[nodiscard]] std::string usage() const override { return ""; };
 
  protected:
   template <typename T>
@@ -887,19 +858,12 @@ class ArgParser {
   };
 
  public:
-  static ArgParser from_getopt(std::string const& short_opt,
-                               std::string const& long_opt) {
-    ArgParser parser;
+  ArgParser() = default;
+  explicit ArgParser(std::string  description)
+      : description(std::move(description)) {}
 
-    // TODO: parse getopt short and long option
-    return parser;
-  }
-  ArgParser() {}
-  explicit ArgParser(std::string const& description)
-      : description(description) {}
-
-  ArgParser& set_program_name(std::string const& program_name) {
-    this->program_name = program_name;
+  ArgParser& set_program_name(std::string const& programName) {
+    this->program_name = programName;
     return *this;
   }
 
@@ -965,8 +929,8 @@ class ArgParser {
     }
     ss << "\n\n";
     ss << description << "\n\n";
-    for (auto it = begin(all_options); it != end(all_options); ++it) {
-      ss << (*it)->usage() << "\n";
+    for (auto & all_option : all_options) {
+      ss << all_option->usage() << "\n";
     }
 
     return ss.str();
@@ -975,7 +939,7 @@ class ArgParser {
   std::pair<int, std::string> parse(int argc, const char* argv[]) {
     std::vector<std::string> command_line_args{argv, argv + argc};
 
-    if (command_line_args.size() == 0) {
+    if (command_line_args.empty()) {
       return {0, ""};
     }
 
@@ -994,7 +958,6 @@ class ArgParser {
         find_if(begin(all_options), end(all_options),
                 [](auto& o) { return o->is_positional(); });
 
-    int index = 0;
     while (current != command_line_args.end()) {
       // position args
       // 1. -
@@ -1158,7 +1121,7 @@ class ArgParser {
         begin(all_options), end(all_options),
         [&f](auto const& f1) { return f1->is_flag() && f1->contains(f); });
     if (it != end(all_options)) {
-      return *static_cast<Flag*>((*it).get());
+      return *dynamic_cast<Flag*>((*it).get());
     }
     throw FlagNotFoundException{};
   }
@@ -1168,7 +1131,7 @@ class ArgParser {
         begin(all_options), end(all_options),
         [&opt](auto const& f) { return f->is_option() && f->contains(opt); });
     if (end(all_options) != it) {
-      return *static_cast<Option*>((*it).get());
+      return *dynamic_cast<Option*>((*it).get());
     }
     throw OptionNotFoundException{};
   }
@@ -1179,7 +1142,7 @@ class ArgParser {
                         return f->is_positional() && f->contains(position_name);
                       });
     if (end(all_options) != it) {
-      return *static_cast<Positional*>((*it).get());
+      return *dynamic_cast<Positional*>((*it).get());
     }
     throw PositionalFoundException{};
   }
@@ -1193,7 +1156,7 @@ class ArgParser {
         begin(all_options), end(all_options),
         [flag](auto const& f) { return f->is_flag() && f->contains(flag); });
     if (it != end(all_options)) {
-      return static_cast<Flag*>((*it).get());
+      return dynamic_cast<Flag*>((*it).get());
     }
     return {};
   }
@@ -1205,7 +1168,7 @@ class ArgParser {
         begin(all_options), end(all_options),
         [opt](auto const& f) { return f->is_option() && f->contains(opt); });
     if (end(all_options) != it) {
-      return static_cast<Option*>((*it).get());
+      return dynamic_cast<Option*>((*it).get());
     }
     return {};
   }
@@ -1219,4 +1182,4 @@ class ArgParser {
 
 }  // namespace argparse
 
-#endif  // __ARGPARSE_CPP_H__
+#endif  // ARGPARSE_CPP_H_
