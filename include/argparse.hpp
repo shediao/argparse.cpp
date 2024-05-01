@@ -590,6 +590,8 @@ class Flag : public Base {
 
  private:
   void Flag_init(std::string const& flag_desc) {
+    // TODO:
+    // flag is ,
     auto all = StringUtil::split(flag_desc, ',');
     assert(!all.empty());
     for (auto f : all) {
@@ -751,8 +753,8 @@ class Positional : public Base {
 
  public:
   bool is_flag() const override { return false; };
-  bool is_option() const override { return true; };
-  bool is_positional() const override { return false; };
+  bool is_option() const override { return false; };
+  bool is_positional() const override { return true; };
 
  protected:
   template <typename T>
@@ -812,11 +814,15 @@ class Positional : public Base {
  protected:
   template <typename T>
   Positional(std::string const& name, T& bind)
-      : Base(Base::identity<T>{}, bind) {}
+      : Base(Base::identity<T>{}, bind) {
+    flag_and_option_names.push_back(name);
+  }
 
   template <typename T>
   Positional(std::string const& name, Base::identity<T>)
-      : Base(Base::identity<T>{}) {}
+      : Base(Base::identity<T>{}) {
+    flag_and_option_names.push_back(name);
+  }
   bool can_set_value{true};
 };
 
@@ -828,6 +834,10 @@ class ArgParser {
   class OptionNotFoundException : public std::exception {
    public:
     const char* what() { return "Option not found Exception"; }
+  };
+  class PositionalFoundException : public std::exception {
+   public:
+    const char* what() { return "Positional not found Exception"; }
   };
 
   struct PositionValueVisitor {
@@ -865,7 +875,7 @@ class ArgParser {
     return *p;
   }
 
-  template <typename T,
+  template <typename T = bool,
             typename = std::enable_if_t<is_flag_bindable_value_v<T>>>
   Flag& add_flag(std::string const& flag_desc) {
     auto x = Flag::make_flag<T>(flag_desc);
@@ -883,7 +893,7 @@ class ArgParser {
     return *p;
   }
 
-  template <typename T,
+  template <typename T = std::string,
             typename = std::enable_if_t<is_option_bindable_value_v<T>>>
   Option& add_option(std::string const& option_desc) {
     auto x = Option::make_option<T>(option_desc);
@@ -897,22 +907,23 @@ class ArgParser {
   Positional& add_positional(std::string const& name, T& bind) {
     auto x = Positional::make_positional(name, bind);
     auto p = x.get();
-    all_positionals.push_back(std::move(x));
+    all_options.push_back(std::move(x));
     return *p;
   }
-  template <typename T,
+  template <typename T = std::vector<std::string>,
             typename = std::enable_if_t<is_position_bindable_value_v<T>>>
-  void add_positional(std::string const& name) {
+  Positional& add_positional(std::string const& name) {
     auto x = Positional::make_positional<T>(name);
     auto p = x.get();
-    all_positionals.push_back(std::move(x));
+    all_options.push_back(std::move(x));
     return *p;
   }
 
   std::string usage() {
     std::stringstream ss;
     ss << (program_name.empty() ? "?" : program_name) << " [OPTION]... ";
-    if (not all_positionals.empty()) {
+    if (not any_of(begin(all_options), end(all_options),
+                   [](auto& o) { return o->is_positional(); })) {
       ss << " [--] [args....]";
     }
     ss << "\n\n";
@@ -942,7 +953,9 @@ class ArgParser {
       current = std::next(command_line_args.begin());
     }
 
-    auto current_position_it = all_positionals.begin();
+    auto current_position_it =
+        find_if(begin(all_options), end(all_options),
+                [](auto& o) { return o->is_positional(); });
 
     int index = 0;
     while (current != command_line_args.end()) {
@@ -957,11 +970,13 @@ class ArgParser {
       auto const& curr_arg = *current;
 
       if (StringUtil::is_position_arg(curr_arg)) {
-        while (!(*current_position_it)->can_set_value &&
-               current_position_it != all_positionals.end()) {
-          current_position_it++;
+        while (!((Positional*)current_position_it->get())->can_set_value &&
+               current_position_it != all_options.end()) {
+          current_position_it =
+              find_if(std::next(current_position_it), end(all_options),
+                      [](auto& o) { return o->is_positional(); });
         }
-        if (current_position_it == all_positionals.end()) {
+        if (current_position_it == all_options.end()) {
           std::stringstream ss;
           ss << "invalid option -- -" << curr_arg;
           return {1, ss.str()};
@@ -1067,11 +1082,13 @@ class ArgParser {
     }
 
     for (; current != command_line_args.end(); current++) {
-      while (!(*current_position_it)->can_set_value &&
-             current_position_it != all_positionals.end()) {
-        current_position_it++;
+      while (!((Positional*)current_position_it->get())->can_set_value &&
+             current_position_it != all_options.end()) {
+        current_position_it =
+            find_if(std::next(current_position_it), end(all_options),
+                    [](auto& o) { return o->is_positional(); });
       }
-      if (current_position_it == all_positionals.end()) {
+      if (current_position_it == all_options.end()) {
         std::stringstream ss;
         ss << "invalid option -- -" << *current;
         return {1, ss.str()};
@@ -1081,13 +1098,22 @@ class ArgParser {
     return {0, ""};
   }
 
-  Base& operator[](std::string const& f) {
+  std::optional<Base*> get(std::string const& f) {
     auto it = find_if(begin(all_options), end(all_options),
                       [&f](auto const& f1) { return f1->contains(f); });
     if (it != end(all_options)) {
-      return *((*it).get());
+      return (*it).get();
     }
-    throw FlagNotFoundException{};
+    return std::nullopt;
+  }
+
+  Base& operator[](std::string const& f) {
+    auto x = get(f);
+    if (x.has_value()) {
+      return *(x.value());
+    } else {
+      throw FlagNotFoundException{};
+    }
   }
 
   Flag& flag(std::string const& f) {
@@ -1108,6 +1134,17 @@ class ArgParser {
       return *static_cast<Option*>((*it).get());
     }
     throw OptionNotFoundException{};
+  }
+
+  Positional& positional(std::string const& position_name) {
+    auto it = find_if(begin(all_options), end(all_options),
+                      [&position_name](auto const& f) {
+                        return f->is_positional() && f->contains(position_name);
+                      });
+    if (end(all_options) != it) {
+      return *static_cast<Positional*>((*it).get());
+    }
+    throw PositionalFoundException{};
   }
 
  private:
@@ -1141,15 +1178,6 @@ class ArgParser {
 
   std::vector<std::unique_ptr<Base>> all_options{};
   std::vector<std::unique_ptr<Positional>> all_positionals{};
-
-  std::vector<
-      std::variant<std::reference_wrapper<std::string>,
-                   std::reference_wrapper<std::vector<std::string>>,
-                   std::reference_wrapper<std::map<std::string, std::string>>,
-                   std::string,
-                   std::vector<std::string>,
-                   std::map<std::string, std::string>>>
-      position_args;
 };
 
 }  // namespace argparse
