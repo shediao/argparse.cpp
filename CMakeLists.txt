@@ -22,6 +22,7 @@ add_subdirectory(third_party/googletest)
 
 file(GLOB all_unittest_sources src/*_test.cpp tests/*_test.cpp)
 
+enable_testing()
 foreach(unittest_file ${all_unittest_sources})
   get_filename_component(unittest_name ${unittest_file} NAME_WE)
   add_executable(${unittest_name} ${unittest_file})
@@ -33,4 +34,5 @@ foreach(unittest_file ${all_unittest_sources})
                         -fsanitize=undefined)
   endif()
   target_link_libraries(${unittest_name} argparse gtest gtest_main)
+  add_test(NAME ${unittest_name} COMMAND ${unittest_name})
 endforeach()
