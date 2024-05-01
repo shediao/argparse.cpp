@@ -13,6 +13,9 @@
 // [√] 7. help info & usage
 // [√] 8. pargram name
 //     9. setopt(short, long) 支持getopt方式
+//     10. all api test
+//     11. top100 linux command test
+//     12. subcommand support
 
 #include <assert.h>
 #include <algorithm>
