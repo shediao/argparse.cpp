@@ -391,6 +391,31 @@ class Base {
     return std::get<T>(value);
   }
 
+  template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
+  Base& bind(T& bind_val) {
+    if (is_flag()) {
+      if constexpr (is_flag_bindable_value_v<T>) {
+        value = std::ref(bind_val);
+      } else {
+        assert(false);
+      }
+    } else if (is_option()) {
+      if constexpr (is_option_bindable_value_v<T>) {
+        value = std::ref(bind_val);
+      } else {
+        assert(false);
+      }
+      assert(is_option_bindable_value_v<T>);
+    } else if (is_positional()) {
+      if constexpr (is_position_bindable_value_v<T>) {
+        value = std::ref(bind_val);
+      } else {
+        assert(false);
+      }
+    }
+    return *this;
+  }
+
   Base& help(std::string const& help) {
     help_msg = help;
     return *this;
@@ -792,10 +817,12 @@ class Positional : public Base {
           } else if constexpr (std::is_same_v<
                                    std::reference_wrapper<std::string>, type>) {
             v.get() = val;
+            can_set_value = false;
           } else if constexpr (std::is_same_v<std::reference_wrapper<
                                                   std::vector<std::string>>,
                                               type>) {
             v.get().push_back(val);
+            can_set_value = true;
           } else if constexpr (std::is_same_v<std::reference_wrapper<std::map<
                                                   std::string, std::string>>,
                                               type>) {
@@ -857,6 +884,13 @@ class ArgParser {
   };
 
  public:
+  static ArgParser from_getopt(std::string const& short_opt,
+                               std::string const& long_opt) {
+    ArgParser parser;
+
+    // TODO: parse getopt short and long option
+    return parser;
+  }
   ArgParser() {}
   explicit ArgParser(std::string const& description)
       : description(description) {}

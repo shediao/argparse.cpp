@@ -25,7 +25,8 @@ TEST(Base, count1) {
 
   ASSERT_EQ(0, parser["d"].count());
 
-  std::vector<const char*> cmd{"argparser", "-d", "--debug", "-r", "--release", "-d"};
+  std::vector<const char*> cmd{"argparser", "-d",        "--debug",
+                               "-r",        "--release", "-d"};
   parser.parse(cmd.size(), cmd.data());
 
   ASSERT_TRUE(is_debug);
@@ -35,8 +36,7 @@ TEST(Base, count1) {
   ASSERT_THROW(parser["debug"].as<int>(), std::bad_variant_access);
 }
 
-
-TEST(Base, is_flag){
+TEST(Base, is_flag) {
   argparse::ArgParser parser;
   parser.add_flag<bool>("d,debug,!r,!release");
   parser.add_option<std::string>("type");
@@ -73,8 +73,8 @@ TEST(Base, as1) {
   ASSERT_THROW(parser["input"].as<std::string>(), std::bad_variant_access);
   ASSERT_TRUE(parser["input"].as<std::vector<std::string>>().empty());
 
-
-  std::vector<const char*> cmd{"argparser", "-i", "file1", "--input", "file2", "-v"};
+  std::vector<const char*> cmd{"argparser", "-i",    "file1",
+                               "--input",   "file2", "-v"};
   auto [ret, err] = parser.parse(cmd.size(), cmd.data());
   ASSERT_EQ(ret, 0);
   ASSERT_EQ("", err);
@@ -88,7 +88,6 @@ TEST(Base, as1) {
 }
 
 TEST(Base, set_default) {
-  using namespace std::literals::string_literals;
   argparse::ArgParser parser;
   parser.add_flag<bool>("d,debug,!r,!release");
   parser.add_flag<int>("level");
@@ -99,7 +98,6 @@ TEST(Base, set_default) {
 
   parser["debug"].set_default(true);
   ASSERT_TRUE(parser["debug"].as<bool>());
-
 
   ASSERT_EQ(0, parser["level"].as<int>());
   parser["level"].set_default(1000);
@@ -122,7 +120,6 @@ TEST(Base, set_default) {
 }
 
 TEST(Base, set_default2) {
-  using namespace std::literals::string_literals;
   argparse::ArgParser parser;
   bool is_debug{false};
   int level{0};
@@ -138,7 +135,6 @@ TEST(Base, set_default2) {
 
   parser["debug"].set_default(true);
   ASSERT_TRUE(is_debug);
-
 
   ASSERT_EQ(0, level);
   parser["level"].set_default(1000);
@@ -158,6 +154,40 @@ TEST(Base, set_default2) {
   ASSERT_EQ(inputs[2], "3");
   ASSERT_EQ(inputs[3], "4");
   ASSERT_EQ(inputs[4], "5");
+}
+
+TEST(Base, bind) {
+  argparse::ArgParser parser;
+  bool help{false};
+  int level{9};
+  std::string name{};
+  std::string dir{};
+  std::vector<std::string> files{};
+  parser.add_flag("h,help").bind(help);
+  parser.add_option("l,level").bind(level);
+  parser.add_option("n,name").bind(name);
+  parser.add_positional("dir").bind(dir);
+  parser.add_positional("files").bind(files);
+
+  std::vector<const char*> cmd{
+      "test", "-l5", "--name=shediao.xsd", "dir1", "file1", "file2", "file3"};
+  parser.parse(cmd.size(), cmd.data());
+
+  ASSERT_EQ(help, parser["help"].as<bool>());
+  ASSERT_EQ(level, parser["level"].as<int>());
+  ASSERT_EQ(name, parser["name"].as<std::string>());
+  ASSERT_EQ(dir, parser["dir"].as<std::string>());
+  ASSERT_EQ(files, parser["files"].as<std::vector<std::string>>());
+
+  ASSERT_FALSE(help);
+
+  ASSERT_EQ(level, 5);
+  ASSERT_EQ(name, "shediao.xsd");
+  ASSERT_EQ(dir, "dir1");
+  ASSERT_EQ(files.size(), 3);
+  ASSERT_EQ("file1", files[0]);
+  ASSERT_EQ("file2", files[1]);
+  ASSERT_EQ("file3", files[2]);
 }
 
 TEST(ArgParser, parse0) {
