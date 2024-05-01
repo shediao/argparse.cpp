@@ -201,7 +201,7 @@ argparse::ArgParser make_ls_parser() {
     parser.add_flag("-c")
         .help(R"(Use time when file status was last changed for sorting or printing.)");
 
-    parser.add_option<std::string>("color")
+    parser.add_option<std::string>("color").set_default("when")
         .help(R"(Output colored escape sequences based on when, which may be set to either always, auto, or never.
         always will make ls always output color.  If TERM is unset or set to an invalid terminal, then ls will fall back to explicit ANSI escape sequences without the help of termcap(5).  always is the default if --color is specified without an
         argument.
@@ -389,4 +389,57 @@ TEST(ArgParse, lscmd) {
     ASSERT_TRUE(parser.get("D").value()->is_option());
     ASSERT_TRUE(parser.get("color").value()->is_option());
     ASSERT_TRUE(parser.get("files_or_directories").value()->is_positional());
+}
+
+
+TEST(lscmd, parser){
+    auto parser = make_ls_parser();
+    ASSERT_FALSE(parser["l"].as<bool>());
+    ASSERT_FALSE(parser["a"].as<bool>());
+    ASSERT_FALSE(parser["F"].as<bool>());
+
+    std::vector<const char*> cmd{"ls", "-laF"};
+
+    parser.parse(cmd.size(), cmd.data());
+
+    ASSERT_TRUE(parser["l"].as<bool>());
+    ASSERT_TRUE(parser["a"].as<bool>());
+    ASSERT_TRUE(parser["F"].as<bool>());
+}
+
+TEST(lscmd, parser2){
+    auto parser = make_ls_parser();
+
+    ASSERT_EQ(parser["color"].as<std::string>(), "when");
+
+    std::vector<const char*> cmd{"ls", "-laF", "--color=always"};
+
+    parser.parse(cmd.size(), cmd.data());
+
+    ASSERT_TRUE(parser["l"].as<bool>());
+    ASSERT_TRUE(parser["a"].as<bool>());
+    ASSERT_TRUE(parser["F"].as<bool>());
+
+    ASSERT_EQ(parser["color"].as<std::string>(), "always");
+}
+
+TEST(lscmd, parser3){
+    auto parser = make_ls_parser();
+
+    ASSERT_EQ(parser["color"].as<std::string>(), "when");
+
+    std::vector<const char*> cmd{"ls", "-laF", "--color=always", "./1", "./1/2/3", ".hided/"};
+
+    parser.parse(cmd.size(), cmd.data());
+
+    ASSERT_TRUE(parser["l"].as<bool>());
+    ASSERT_TRUE(parser["a"].as<bool>());
+    ASSERT_TRUE(parser["F"].as<bool>());
+
+    ASSERT_EQ(parser["color"].as<std::string>(), "always");
+
+    ASSERT_EQ(parser["files_or_directories"].as<std::vector<std::string>>().size(), 3);
+    ASSERT_EQ(parser["files_or_directories"].as<std::vector<std::string>>()[0], "./1");
+    ASSERT_EQ(parser["files_or_directories"].as<std::vector<std::string>>()[1], "./1/2/3");
+    ASSERT_EQ(parser["files_or_directories"].as<std::vector<std::string>>()[2], ".hided/");
 }
