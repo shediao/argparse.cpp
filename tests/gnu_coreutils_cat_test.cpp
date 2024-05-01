@@ -97,7 +97,7 @@ argparse::ArgParser bind_value() {
   parser.add_flag("--help", cat_flags.help).help("display this help and exit");
   parser.add_flag("--version", cat_flags.version)
       .help("output version information and exit");
-  parser.add_position_arg(cat_flags.files);
+  parser.add_positional("files", cat_flags.files);
 
   return parser;
 }

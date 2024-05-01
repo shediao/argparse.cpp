@@ -57,7 +57,7 @@ argparse::ArgParser bind_value() {
       .help("output version information and exit");
   parser.add_option("-s,--separator", tac_flags.separator)
       .help("use STRING as the separator instead of newline");
-  parser.add_position_arg(tac_flags.files);
+  parser.add_positional("files", tac_flags.files);
   return parser;
 }
 

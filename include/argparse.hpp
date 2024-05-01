@@ -12,6 +12,7 @@
 //     6. Contents that qualify option values, such as ranges, lists, etc.
 // [√] 7. help info & usage
 // [√] 8. pargram name
+//     9. setopt(short, long) 支持getopt方式
 
 #include <assert.h>
 #include <algorithm>
@@ -380,6 +381,7 @@ class Base {
   virtual ~Base() = default;
   virtual bool is_flag() const = 0;
   virtual bool is_option() const = 0;
+  virtual bool is_positional() const = 0;
 
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
   T const& as() const {
@@ -405,15 +407,15 @@ class Base {
   }
 
   int count() const { return hit_count; }
+  template <typename T>
+  struct identity {
+    using type = T;
+  };
 
  protected:
   Base(Base const&) = delete;
   Base(Base&&) = delete;
   Base& operator=(Base const&) = delete;
-  template <typename T>
-  struct identity {
-    using type = T;
-  };
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
   Base(identity<T> t, T& bind) : value(std::ref(bind)) {}
 
@@ -511,6 +513,7 @@ class Flag : public Base {
  public:
   bool is_flag() const override { return true; };
   bool is_option() const override { return false; };
+  bool is_positional() const override { return false; };
 
  protected:
   template <typename T,
@@ -645,6 +648,7 @@ class Option : public Base {
  public:
   bool is_flag() const override { return false; };
   bool is_option() const override { return true; };
+  bool is_positional() const override { return false; };
 
  protected:
   template <typename T,
@@ -742,6 +746,80 @@ class Option : public Base {
   std::string val_help_msg;
 };
 
+class Positional : public Base {
+  friend class ArgParser;
+
+ public:
+  bool is_flag() const override { return false; };
+  bool is_option() const override { return true; };
+  bool is_positional() const override { return false; };
+
+ protected:
+  template <typename T>
+  static std::unique_ptr<Positional> make_positional(std::string const& name,
+                                                     T& bind) {
+    return std::unique_ptr<Positional>(new Positional(name, bind));
+  }
+  template <typename T>
+  static std::unique_ptr<Positional> make_positional(std::string const& name) {
+    return std::unique_ptr<Positional>(
+        new Positional(name, Base::identity<T>{}));
+  }
+
+  void hit(char short_name) override { assert(false); };
+  void hit(std::string const& long_name) override { assert(false); };
+  std::pair<int, std::string> hit(char short_name,
+                                  std::string const& val) override {
+    assert(false);
+  };
+  std::pair<int, std::string> hit(std::string const& long_name,
+                                  std::string const& val) override {
+    std::visit(
+        overloaded{[&val, this](auto& v) {
+          using type = std::remove_reference_t<decltype(v)>;
+          if constexpr (std::is_same_v<std::string, type>) {
+            v = val;
+            can_set_value = false;
+          } else if constexpr (std::is_same_v<std::vector<std::string>, type>) {
+            v.push_back(val);
+            can_set_value = true;
+          } else if constexpr (std::is_same_v<
+                                   std::map<std::string, std::string>, type>) {
+            // TODO:
+            assert(false);
+          } else if constexpr (std::is_same_v<
+                                   std::reference_wrapper<std::string>, type>) {
+            v.get() = val;
+          } else if constexpr (std::is_same_v<std::reference_wrapper<
+                                                  std::vector<std::string>>,
+                                              type>) {
+            v.get().push_back(val);
+          } else if constexpr (std::is_same_v<std::reference_wrapper<std::map<
+                                                  std::string, std::string>>,
+                                              type>) {
+            // TODO:
+            assert(false);
+          } else {
+            assert(false);
+          }
+        }},
+        value);
+    return {0, ""};
+  };
+
+  std::string usage() const override { return ""; };
+
+ protected:
+  template <typename T>
+  Positional(std::string const& name, T& bind)
+      : Base(Base::identity<T>{}, bind) {}
+
+  template <typename T>
+  Positional(std::string const& name, Base::identity<T>)
+      : Base(Base::identity<T>{}) {}
+  bool can_set_value{true};
+};
+
 class ArgParser {
   class FlagNotFoundException : public std::exception {
    public:
@@ -816,19 +894,25 @@ class ArgParser {
 
   template <typename T,
             typename = std::enable_if_t<is_position_bindable_value_v<T>>>
-  void add_position_arg(T& bind) {
-    position_args.emplace_back(std::ref(bind));
+  Positional& add_positional(std::string const& name, T& bind) {
+    auto x = Positional::make_positional(name, bind);
+    auto p = x.get();
+    all_positionals.push_back(std::move(x));
+    return *p;
   }
   template <typename T,
             typename = std::enable_if_t<is_position_bindable_value_v<T>>>
-  void add_position_arg() {
-    position_args.emplace_back(T{});
+  void add_positional(std::string const& name) {
+    auto x = Positional::make_positional<T>(name);
+    auto p = x.get();
+    all_positionals.push_back(std::move(x));
+    return *p;
   }
 
   std::string usage() {
     std::stringstream ss;
     ss << (program_name.empty() ? "?" : program_name) << " [OPTION]... ";
-    if (not position_args.empty()) {
+    if (not all_positionals.empty()) {
       ss << " [--] [args....]";
     }
     ss << "\n\n";
@@ -858,7 +942,7 @@ class ArgParser {
       current = std::next(command_line_args.begin());
     }
 
-    auto current_position_it = position_args.begin();
+    auto current_position_it = all_positionals.begin();
 
     int index = 0;
     while (current != command_line_args.end()) {
@@ -873,75 +957,16 @@ class ArgParser {
       auto const& curr_arg = *current;
 
       if (StringUtil::is_position_arg(curr_arg)) {
-        if (current_position_it == position_args.end()) {
+        while (!(*current_position_it)->can_set_value &&
+               current_position_it != all_positionals.end()) {
+          current_position_it++;
+        }
+        if (current_position_it == all_positionals.end()) {
           std::stringstream ss;
           ss << "invalid option -- -" << curr_arg;
           return {1, ss.str()};
         }
-        if ((*current_position_it).index() == 2) {
-          auto const i = curr_arg.find('=');
-          if (i == std::string::npos) {
-            current_position_it++;
-          }
-        }
-
-        bool revisit = false;
-        std::visit(
-            overloaded{
-                [&current_position_it,
-                 &curr_arg](std::string& x) -> std::pair<int, std::string> {
-                  x = curr_arg;
-                  current_position_it++;
-                  return {0, ""};
-                },
-                [&current_position_it, &curr_arg](std::vector<std::string>& x)
-                    -> std::pair<int, std::string> {
-                  x.push_back(curr_arg);
-                  return {0, ""};
-                },
-                [&revisit, &current_position_it,
-                 &curr_arg](std::map<std::string, std::string>& x)
-                    -> std::pair<int, std::string> {
-                  auto const i = curr_arg.find('=');
-                  if (i == std::string::npos) {
-                    current_position_it++;
-                    revisit = true;
-                  } else {
-                    x.emplace(curr_arg.substr(0, i), curr_arg.substr(i + 1));
-                  }
-                  return {0, ""};
-                },
-                [&current_position_it,
-                 &curr_arg](std::reference_wrapper<std::string>& x)
-                    -> std::pair<int, std::string> {
-                  x.get() = curr_arg;
-                  current_position_it++;
-                  return {0, ""};
-                },
-                [&current_position_it,
-                 &curr_arg](std::reference_wrapper<std::vector<std::string>>& x)
-                    -> std::pair<int, std::string> {
-                  x.get().push_back(curr_arg);
-                  return {0, ""};
-                },
-                [&revisit, &current_position_it, &curr_arg](
-                    std::reference_wrapper<std::map<std::string, std::string>>&
-                        x) -> std::pair<int, std::string> {
-                  auto const i = curr_arg.find('=');
-                  if (i == std::string::npos) {
-                    current_position_it++;
-                    revisit = true;
-                  } else {
-                    x.get().emplace(curr_arg.substr(0, i),
-                                    curr_arg.substr(i + 1));
-                  }
-                  return {0, ""};
-                },
-            },
-            (*current_position_it));
-        if (revisit) {
-          continue;
-        }
+        (*current_position_it)->hit("", curr_arg);
         current = next;
       } else if (StringUtil::is_dash_dash(curr_arg)) {
         // --
@@ -1042,11 +1067,16 @@ class ArgParser {
     }
 
     for (; current != command_line_args.end(); current++) {
-      auto [code, err_msg] =
-          std::visit(PositionValueVisitor(*current), (*current_position_it));
-      if (code != 0) {
-        return {1, err_msg};
+      while (!(*current_position_it)->can_set_value &&
+             current_position_it != all_positionals.end()) {
+        current_position_it++;
       }
+      if (current_position_it == all_positionals.end()) {
+        std::stringstream ss;
+        ss << "invalid option -- -" << *current;
+        return {1, ss.str()};
+      }
+      (*current_position_it)->hit("", *current);
     }
     return {0, ""};
   }
@@ -1110,6 +1140,7 @@ class ArgParser {
   std::string program_name{};
 
   std::vector<std::unique_ptr<Base>> all_options{};
+  std::vector<std::unique_ptr<Positional>> all_positionals{};
 
   std::vector<
       std::variant<std::reference_wrapper<std::string>,
