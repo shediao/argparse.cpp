@@ -12,13 +12,14 @@
 //     6. Contents that qualify option values, such as ranges, lists, etc.
 // [√] 7. help info & usage
 // [√] 8. pargram name
-//     9. setopt(short, long) 支持getopt方式
-//     10. all api test
-//     11. top100 linux command test
-//     12. subcommand support
+//     9. alias
+//     10. setopt(short, long) 支持getopt方式
+//     11. all api test
+//     12. top100 linux command test
+//     13. subcommand support
 
-#include <cassert>
 #include <algorithm>
+#include <cassert>
 #include <charconv>
 #include <iterator>
 #include <map>
@@ -860,7 +861,7 @@ class ArgParser {
 
  public:
   ArgParser() = default;
-  explicit ArgParser(std::string  description)
+  explicit ArgParser(std::string description)
       : description(std::move(description)) {}
 
   ArgParser& set_program_name(std::string const& programName) {
@@ -925,16 +926,20 @@ class ArgParser {
     std::stringstream ss;
     ss << (program_name.empty() ? "?" : program_name) << " [OPTION]... ";
     if (!any_of(begin(all_options), end(all_options),
-                   [](auto& o) { return o->is_positional(); })) {
+                [](auto& o) { return o->is_positional(); })) {
       ss << " [--] [args....]";
     }
     ss << "\n\n";
     ss << description << "\n\n";
-    for (auto & all_option : all_options) {
+    for (auto& all_option : all_options) {
       ss << all_option->usage() << "\n";
     }
 
     return ss.str();
+  }
+
+  void set_unknown_option_as_start_of_positionals() {
+    unknown_option_as_start_of_positionals = true;
   }
 
   std::pair<int, std::string> parse(int argc, const char* argv[]) {
@@ -986,7 +991,9 @@ class ArgParser {
         current = next;
       } else if (StringUtil::is_dash_dash(curr_arg)) {
         // --
-        current = next;
+        if (!unknown_option_as_start_of_positionals) {
+          current = next;
+        }
         break;
       } else if (StringUtil::is_short_opt(curr_arg)) {
         // short
@@ -1028,9 +1035,13 @@ class ArgParser {
               }
             }
           } else {
-            std::stringstream ss;
-            ss << "invalid option -- -" << *short_p;
-            return {1, ss.str()};
+            if (unknown_option_as_start_of_positionals) {
+              break;
+            } else {
+              std::stringstream ss;
+              ss << "invalid option -- -" << *short_p;
+              return {1, ss.str()};
+            }
           }
         }
         current = next;
@@ -1070,9 +1081,13 @@ class ArgParser {
               next = std::next(next);
             }
           } else {
-            std::stringstream ss;
-            ss << "invalid option -- --" << option;
-            return {1, ss.str()};
+            if (unknown_option_as_start_of_positionals) {
+              break;
+            } else {
+              std::stringstream ss;
+              ss << "invalid option -- --" << option;
+              return {1, ss.str()};
+            }
           }
         }
         current = next;
@@ -1176,9 +1191,9 @@ class ArgParser {
 
   std::string description{};
   std::string program_name{};
+  bool unknown_option_as_start_of_positionals{false};
 
   std::vector<std::unique_ptr<Base>> all_options{};
-  std::vector<std::unique_ptr<Positional>> all_positionals{};
 };
 
 }  // namespace argparse
