@@ -227,7 +227,6 @@ struct LsOptions {
   bool flag_C;
   std::string option_D;
   bool flag_F;
-  bool flag_G;
   bool flag_H;
   bool flag_I;
   bool flag_L;
@@ -297,7 +296,7 @@ make_ls_parser_bind() {
       .help(
           R"(Display a slash (‘/’) immediately after each pathname that is a directory, an asterisk (‘*’) after each that is executable, an at sign (‘@’) after each symbolic link, an equals sign (‘=’) after each socket, a percent sign (‘%’) after each whiteout, and a vertical bar (‘|’) after each that is a FIFO.)");
 
-  parser.add_flag("G", option->flag_G)
+  parser.add_alias_flag("G", "color", "auto")
       .help(
           R"(Enable colorized output.  This option is equivalent to defining CLICOLOR or COLORTERM in the environment and setting --color=auto.  (See below.)  This functionality can be compiled out by removing the definition of COLORLS.  This option is not defined in IEEE Std 1003.1-2008 (“POSIX.1”).)");
 
@@ -492,7 +491,7 @@ argparse::ArgParser make_ls_parser_unbind() {
   parser.add_flag("F").help(
       R"(Display a slash (‘/’) immediately after each pathname that is a directory, an asterisk (‘*’) after each that is executable, an at sign (‘@’) after each symbolic link, an equals sign (‘=’) after each socket, a percent sign (‘%’) after each whiteout, and a vertical bar (‘|’) after each that is a FIFO.)");
 
-  parser.add_flag("G").help(
+  parser.add_alias_flag("G", "color", "auto").help(
       R"(Enable colorized output.  This option is equivalent to defining CLICOLOR or COLORTERM in the environment and setting --color=auto.  (See below.)  This functionality can be compiled out by removing the definition of COLORLS.  This option is not defined in IEEE Std 1003.1-2008 (“POSIX.1”).)");
 
   parser.add_flag("H").help(
@@ -730,7 +729,6 @@ TEST(ArgParse, lscmd_bind) {
   ASSERT_EQ(parser["B"].as<bool>(), options->flag_B);
   ASSERT_EQ(parser["C"].as<bool>(), options->flag_C);
   ASSERT_EQ(parser["F"].as<bool>(), options->flag_F);
-  ASSERT_EQ(parser["G"].as<bool>(), options->flag_G);
   ASSERT_EQ(parser["H"].as<bool>(), options->flag_H);
   ASSERT_EQ(parser["I"].as<bool>(), options->flag_I);
   ASSERT_EQ(parser["L"].as<bool>(), options->flag_L);
@@ -780,7 +778,6 @@ TEST(ArgParse, lscmd_bind) {
   ASSERT_EQ(&(parser["B"].as<bool>()), &(options->flag_B));
   ASSERT_EQ(&(parser["C"].as<bool>()), &(options->flag_C));
   ASSERT_EQ(&(parser["F"].as<bool>()), &(options->flag_F));
-  ASSERT_EQ(&(parser["G"].as<bool>()), &(options->flag_G));
   ASSERT_EQ(&(parser["H"].as<bool>()), &(options->flag_H));
   ASSERT_EQ(&(parser["I"].as<bool>()), &(options->flag_I));
   ASSERT_EQ(&(parser["L"].as<bool>()), &(options->flag_L));
@@ -1003,7 +1000,7 @@ TEST(lscmd, parser3_bind) {
   ASSERT_EQ(parser["color"].as<std::string>(), "when");
   ASSERT_EQ(options->option_color, "when");
 
-  std::vector<const char*> cmd{"ls",  "-laF",    "--color=always",
+  std::vector<const char*> cmd{"ls",  "-laF",    "--color=always", "-G",
                                "./1", "./1/2/3", ".hided/"};
 
   parser.parse(cmd.size(), cmd.data());
@@ -1015,8 +1012,8 @@ TEST(lscmd, parser3_bind) {
   ASSERT_TRUE(options->flag_a);
   ASSERT_TRUE(options->flag_F);
 
-  ASSERT_EQ(parser["color"].as<std::string>(), "always");
-  ASSERT_EQ(options->option_color, "always");
+  ASSERT_EQ(parser["color"].as<std::string>(), "auto");
+  ASSERT_EQ(options->option_color, "auto");
 
   ASSERT_EQ(
       parser["files_or_directories"].as<std::vector<std::string>>().size(), 3);
@@ -1038,7 +1035,7 @@ TEST(lscmd, parser3) {
 
   ASSERT_EQ(parser["color"].as<std::string>(), "when");
 
-  std::vector<const char*> cmd{"ls",  "-laF",    "--color=always",
+  std::vector<const char*> cmd{"ls",  "-laF",    "--color=always", "-G",
                                "./1", "./1/2/3", ".hided/"};
 
   parser.parse(cmd.size(), cmd.data());
@@ -1047,7 +1044,7 @@ TEST(lscmd, parser3) {
   ASSERT_TRUE(parser["a"].as<bool>());
   ASSERT_TRUE(parser["F"].as<bool>());
 
-  ASSERT_EQ(parser["color"].as<std::string>(), "always");
+  ASSERT_EQ(parser["color"].as<std::string>(), "auto");
 
   ASSERT_EQ(
       parser["files_or_directories"].as<std::vector<std::string>>().size(), 3);

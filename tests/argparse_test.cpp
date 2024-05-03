@@ -222,7 +222,9 @@ TEST(ArgParser, parser0_3) {
   bool flag_2{false};
   bool flag_3{false};
   int flag_v{false};
+  // TODO:
   std::map<std::string, std::string> option_e;
+  // std::vector<argparse::pair_split_by<std::string, std::string, '='>> option_e;
   std::vector<std::string> option_f;
   std::string option_o;
 
@@ -301,12 +303,9 @@ TEST(ArgParser, parser0_3) {
   EXPECT_EQ(parser["v"].as<int>(), 4);
 
   EXPECT_EQ(3, option_e.size());
-  EXPECT_TRUE(option_e.find("e1") != option_e.end());
-  EXPECT_TRUE(option_e.find("e2") != option_e.end());
-  EXPECT_TRUE(option_e.find("xxx") != option_e.end());
+  EXPECT_EQ(option_e.at("xxx"), "yyy");
   EXPECT_EQ(option_e.at("e1"), "v1");
   EXPECT_EQ(option_e.at("e2"), "v2");
-  EXPECT_EQ(option_e.at("xxx"), "yyy");
 
   EXPECT_EQ("8", option_o);
 
