@@ -47,7 +47,8 @@ class bad_value_access : public std::exception {
 class invalid_argument : public std::invalid_argument {
  public:
   explicit invalid_argument(const char* msg) : std::invalid_argument(msg) {}
-  explicit invalid_argument(std::string const& msg) : std::invalid_argument(msg) {}
+  explicit invalid_argument(std::string const& msg)
+      : std::invalid_argument(msg) {}
 };
 
 namespace {
@@ -257,7 +258,7 @@ inline bool startswith(std::string const& str, std::string const& prefix) {
   }
   auto it = str.begin();
   auto pit = prefix.begin();
-  while(pit != prefix.end()) {
+  while (pit != prefix.end()) {
     if (*it != *pit) {
       return false;
     }
@@ -407,7 +408,9 @@ class Base {
   enum class Type { FLAG, ALIAS_FLAG, OPTION, POSITIONAL };
   virtual ~Base() = default;
   Base::Type virtual type() const = 0;
-  bool is_flag() const { return Type::FLAG == this->type() || is_alias_flag(); };
+  bool is_flag() const {
+    return Type::FLAG == this->type() || is_alias_flag();
+  };
   bool is_alias_flag() const { return Type::ALIAS_FLAG == this->type(); };
   bool is_option() const { return Type::OPTION == this->type(); };
   bool is_positional() const { return Type::POSITIONAL == this->type(); };
@@ -492,9 +495,10 @@ class Base {
   Base(Base const&) = delete;
   Base(Base&&) = delete;
   Base& operator=(Base const&) = delete;
-  Base& operator=(Base &&) = delete;
+  Base& operator=(Base&&) = delete;
 
   using value_type = make_variant_type<bool, int, double, std::string>::type;
+
  protected:
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
   Base(identity<T> /*unused*/, T& bind) : value(std::ref(bind)) {}
@@ -522,6 +526,7 @@ class Base {
 class ArgParser;
 class Flag : public Base {
   friend class ArgParser;
+
  public:
   Base::Type type() const override { return Base::Type::FLAG; };
 
@@ -565,7 +570,7 @@ class Flag : public Base {
   void hit(char const flag, std::string const& val) override {
     hit(std::string(1, flag), val);
   }
-  void hit(std::string const&  /*flag*/, std::string const&  /*val*/) override {
+  void hit(std::string const& /*flag*/, std::string const& /*val*/) override {
     assert(false);
   }
 
@@ -594,13 +599,11 @@ class Flag : public Base {
     }
     return ss.str();
   }
-  [[nodiscard]] std::string short_usage() const override {
-    return "";
-  }
+  [[nodiscard]] std::string short_usage() const override { return ""; }
 
  private:
   void Flag_init(std::string const& flag_desc) {
-    // TODO(shediao): 
+    // TODO(shediao):
     // flag is ,
     auto all = StringUtil::split(flag_desc, ',');
     assert(!all.empty());
@@ -631,58 +634,59 @@ class Flag : public Base {
   template <typename ShortOrLong>
   void hit_impl(ShortOrLong const& flag) {
     hit_count++;
-    std::visit(overloaded{
-        [this, &flag](bool& val){
-          if (negate_contains(flag)) {
-            val = false;
-          } else if (Base::contains(flag)) {
-            val = true;
-          } else {
-            // throw execption
-          }
-        },
-        [this, &flag](std::reference_wrapper<bool>& val){
-          if (negate_contains(flag)) {
-            val.get() = false;
-          } else if (Base::contains(flag)) {
-            val.get() = true;
-          } else {
-            // throw execption
-          }
-        },
-        [this, &flag](auto& val){
-          using type = std::remove_reference_t<decltype(val)>;
-          if constexpr (is_reference_wrapper_v<type>) {
-            if constexpr (is_flag_bindable_value_v<typename type::type>) {
+    std::visit(
+        overloaded{
+            [this, &flag](bool& val) {
               if (negate_contains(flag)) {
-                val.get() -= 1;
+                val = false;
               } else if (Base::contains(flag)) {
-                val.get() += 1;
+                val = true;
               } else {
-                assert(false);
-                //TODO(shediao): throw execption
+                // throw execption
               }
-            } else {
-              assert(false);
-              //TODO(shediao): throw execption
-            }
-          } else {
-            if constexpr (is_flag_bindable_value_v<type>) {
+            },
+            [this, &flag](std::reference_wrapper<bool>& val) {
               if (negate_contains(flag)) {
-                val -= 1;
+                val.get() = false;
               } else if (Base::contains(flag)) {
-                val += 1;
+                val.get() = true;
               } else {
-                assert(false);
-                //TODO(shediao): throw execption
+                // throw execption
               }
-            } else {
-              assert(false);
-              //TODO(shediao): throw execption
-            }
-          }
-        }
-        }, value);
+            },
+            [this, &flag](auto& val) {
+              using type = std::remove_reference_t<decltype(val)>;
+              if constexpr (is_reference_wrapper_v<type>) {
+                if constexpr (is_flag_bindable_value_v<typename type::type>) {
+                  if (negate_contains(flag)) {
+                    val.get() -= 1;
+                  } else if (Base::contains(flag)) {
+                    val.get() += 1;
+                  } else {
+                    assert(false);
+                    // TODO(shediao): throw execption
+                  }
+                } else {
+                  assert(false);
+                  // TODO(shediao): throw execption
+                }
+              } else {
+                if constexpr (is_flag_bindable_value_v<type>) {
+                  if (negate_contains(flag)) {
+                    val -= 1;
+                  } else if (Base::contains(flag)) {
+                    val += 1;
+                  } else {
+                    assert(false);
+                    // TODO(shediao): throw execption
+                  }
+                } else {
+                  assert(false);
+                  // TODO(shediao): throw execption
+                }
+              }
+            }},
+        value);
   }
 
   std::vector<std::string> negate_flag_names{};
@@ -695,18 +699,17 @@ class AliasFlag : public Flag {
   Base::Type type() const override { return Base::Type::ALIAS_FLAG; };
 
  protected:
-  std::unique_ptr<AliasFlag> static make_flag(std::string const& flag_desc,
-                                              std::string const& option_name,
-                                              std::string const& option_value) {
+  std::unique_ptr<AliasFlag> static make_flag(
+      std::string const& flag_desc,
+      std::pair<std::string, std::string> option) {
     return std::unique_ptr<AliasFlag>(
-        new AliasFlag(flag_desc, option_name, option_value));
+        new AliasFlag(flag_desc, std::move(option)));
   }
   explicit AliasFlag(std::string const& flag_desc,
-                     std::string const& option_name,
-                     std::string const& option_value)
+                     std::pair<std::string, std::string> option)
       : Flag(flag_desc, Base::identity<bool>{}),
-        option_name(option_name),
-        option_value(option_value) {}
+        option_name(std::move(std::move(option).first)),
+        option_value(std::move(std::move(option).second)) {}
   void hit(char const flag) override { Flag::hit(flag); }
   void hit(std::string const& flag) override { Flag::hit(flag); }
 
@@ -744,7 +747,7 @@ class Option : public Base {
   }
   template <typename T,
             typename = std::enable_if_t<is_option_bindable_value_v<T>>>
-  Option(std::string const& option_desc, Base::identity<T>)
+  Option(std::string const& option_desc, Base::identity<T> /*unused*/)
       : Base(typename Base::identity<T>{}) {
     Option_init(option_desc);
   }
@@ -782,16 +785,16 @@ class Option : public Base {
 
     return ss.str();
   }
-  [[nodiscard]] std::string short_usage() const override {
-    return "";
-  }
+  [[nodiscard]] std::string short_usage() const override { return ""; }
 
-  void hit(std::string const&, std::string const& val) override {
+  void hit(std::string const& /*long_name*/, std::string const& val) override {
     return hit_impl(val);
   }
-  void hit(char, std::string const& val) override { return hit_impl(val); }
-  void hit(std::string const& flag) override { assert(false); }
-  void hit(char const flag) override { assert(false); }
+  void hit(char /*short_name*/, std::string const& val) override {
+    return hit_impl(val);
+  }
+  void hit(std::string const& /*flag*/) override { assert(false); }
+  void hit(char const /*flag*/) override { assert(false); }
 
  private:
   void Option_init(std::string const& option_desc) {
@@ -822,7 +825,6 @@ class Option : public Base {
         value);
   }
 
- private:
   char delimiter{'\0'};
 };
 
@@ -844,9 +846,11 @@ class Positional : public Base {
         new Positional(name, Base::identity<T>{}));
   }
 
-  void hit(char short_name) override { assert(false); };
-  void hit(std::string const& long_name) override { assert(false); };
-  void hit(char short_name, std::string const& val) override { assert(false); };
+  void hit(char /*short_name*/) override { assert(false); };
+  void hit(std::string const& /*long_name*/) override { assert(false); };
+  void hit(char /*short_name*/, std::string const& val) override {
+    assert(false);
+  };
   void hit(std::string const& long_name, std::string const& val) override {
     std::visit(overloaded{[&val, this](auto& v) {
                  using type = std::remove_reference_t<decltype(v)>;
@@ -867,11 +871,8 @@ class Positional : public Base {
   };
 
   [[nodiscard]] std::string usage() const override { return ""; };
-  [[nodiscard]] std::string short_usage() const override {
-    return "";
-  }
+  [[nodiscard]] std::string short_usage() const override { return ""; }
 
- protected:
   template <typename T>
   Positional(std::string const& name, T& bind)
       : Base(Base::identity<T>{}, bind) {
@@ -890,37 +891,26 @@ class Positional : public Base {
 class ArgParser {
   class FlagNotFoundException : public std::exception {
    public:
-    const char* what() const noexcept { return "Flag not found Exception"; }
+    const char* what() const noexcept override {
+      return "Flag not found Exception";
+    }
   };
   class OptionNotFoundException : public std::exception {
    public:
-    const char* what() const noexcept { return "Option not found Exception"; }
+    const char* what() const noexcept override {
+      return "Option not found Exception";
+    }
   };
   class PositionalFoundException : public std::exception {
    public:
-    const char* what() const noexcept { return "Positional not found Exception"; }
-  };
-
-  struct PositionValueVisitor {
-    PositionValueVisitor(std::string const& opt_val) : opt_val(opt_val) {}
-    template <typename T,
-              std::enable_if_t<is_option_bindable_value_v<T>, bool> = true>
-    void operator()(T& x) {
-      insert_or_replace_value(x, opt_val);
+    const char* what() const noexcept override {
+      return "Positional not found Exception";
     }
-    template <typename T,
-              std::enable_if_t<is_option_bindable_value_v<T>, bool> = true>
-    void operator()(std::reference_wrapper<T>& x) {
-      insert_or_replace_value(x.get(), opt_val);
-    }
-
-    std::string const& opt_val;
   };
 
  public:
   ArgParser() = default;
-  explicit ArgParser(std::string const& desc)
-      : description(desc) {}
+  explicit ArgParser(std::string desc) : description(std::move(desc)) {}
 
   ArgParser& set_program_name(std::string const& programName) {
     this->program_name = programName;
@@ -945,10 +935,9 @@ class ArgParser {
     return *p;
   }
   AliasFlag& add_alias_flag(std::string const& flag_desc,
-                            std::string const& option_name,
-                            std::string const& option_value) {
-    auto x = AliasFlag::make_flag(flag_desc, option_name, option_value);
-    auto *p = x.get();
+                            std::pair<std::string, std::string> option_key_value) {
+    auto x = AliasFlag::make_flag(flag_desc, std::move(option_key_value));
+    auto* p = x.get();
     all_options.push_back(std::move(x));
     return *p;
   }
@@ -1043,7 +1032,8 @@ class ArgParser {
 
   std::string usage() {
     std::stringstream ss;
-    ss << "\n" << (program_name.empty() ? "?" : program_name) << " [OPTION]... ";
+    ss << "\n"
+       << (program_name.empty() ? "?" : program_name) << " [OPTION]... ";
     if (!any_of(begin(all_options), end(all_options),
                 [](auto& o) { return o->is_positional(); })) {
       ss << " [--] [args....]";
@@ -1095,7 +1085,8 @@ class ArgParser {
       auto const& curr_arg = *current;
 
       if (StringUtil::is_position_arg(curr_arg)) {
-        while (!((Positional*)current_position_it->get())->can_set_value &&
+        while (!(dynamic_cast<Positional*>(current_position_it->get()))
+                    ->can_set_value &&
                current_position_it != all_options.end()) {
           current_position_it =
               find_if(std::next(current_position_it), end(all_options),
@@ -1142,33 +1133,30 @@ class ArgParser {
                 std::stringstream ss;
                 ss << "option requires an argument -- -" << *short_p;
                 return {1, ss.str()};
-              } else {
-                if ((!next->empty() && (*next)[0] == '-')) {
-                  std::stringstream ss;
-                  ss << "option requires an argument -- -" << *short_p;
-                  return {1, ss.str()};
-                } else {
-                  (*short_option)->hit(*short_p, *next);
-                  short_p = curr_arg.end();
-                  next = std::next(next);
-                }
               }
+              if ((!next->empty() && (*next)[0] == '-')) {
+                std::stringstream ss;
+                ss << "option requires an argument -- -" << *short_p;
+                return {1, ss.str()};
+              }
+              (*short_option)->hit(*short_p, *next);
+              short_p = curr_arg.end();
+              next = std::next(next);
             }
           } else {
             if (unknown_option_as_start_of_positionals) {
               break;
-            } else {
-              std::stringstream ss;
-              ss << "invalid option -- -" << *short_p;
-              return {1, ss.str()};
             }
+            std::stringstream ss;
+            ss << "invalid option -- -" << *short_p;
+            return {1, ss.str()};
           }
         }
         current = next;
       } else if (StringUtil::is_long_opt(curr_arg)) {
         // long
         if (auto i = curr_arg.find('=', 2); i != std::string::npos) {
-          std::string option = curr_arg.substr(2, i - 2);
+          std::string const option = curr_arg.substr(2, i - 2);
           if (auto long_opt = get_option(option); long_opt.has_value()) {
             (*long_opt)->hit(option, curr_arg.substr(i + 1));
           } else {
@@ -1177,7 +1165,7 @@ class ArgParser {
             return {1, ss.str()};
           }
         } else {
-          std::string option = curr_arg.substr(2);
+          std::string const option = curr_arg.substr(2);
           if (auto long_flag = get_flag(option); long_flag.has_value()) {
             (*long_flag)->hit(option);
           } else if (auto long_opt = get_option(option); long_opt.has_value()) {
@@ -1185,22 +1173,21 @@ class ArgParser {
               std::stringstream ss;
               ss << "option requires an argument -- --" << option;
               return {1, ss.str()};
-            } else if (!next->empty() && (*next)[0] == '-') {
+            }
+            if (!next->empty() && (*next)[0] == '-') {
               std::stringstream ss;
               ss << "option requires an argument -- --" << option;
               return {1, ss.str()};
-            } else {
-              (*long_opt)->hit(option, *next);
-              next = std::next(next);
             }
+            (*long_opt)->hit(option, *next);
+            next = std::next(next);
           } else {
             if (unknown_option_as_start_of_positionals) {
               break;
-            } else {
-              std::stringstream ss;
-              ss << "invalid option -- --" << option;
-              return {1, ss.str()};
             }
+            std::stringstream ss;
+            ss << "invalid option -- --" << option;
+            return {1, ss.str()};
           }
         }
         current = next;
@@ -1211,7 +1198,8 @@ class ArgParser {
     }
 
     for (; current != command_line_args.end(); current++) {
-      while (!((Positional*)current_position_it->get())->can_set_value &&
+      while (!(dynamic_cast<Positional*>(current_position_it->get()))
+                  ->can_set_value &&
              current_position_it != all_options.end()) {
         current_position_it =
             find_if(std::next(current_position_it), end(all_options),

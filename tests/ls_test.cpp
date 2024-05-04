@@ -296,7 +296,7 @@ make_ls_parser_bind() {
       .help(
           R"(Display a slash (‘/’) immediately after each pathname that is a directory, an asterisk (‘*’) after each that is executable, an at sign (‘@’) after each symbolic link, an equals sign (‘=’) after each socket, a percent sign (‘%’) after each whiteout, and a vertical bar (‘|’) after each that is a FIFO.)");
 
-  parser.add_alias_flag("G", "color", "auto")
+  parser.add_alias_flag("G", {"color", "auto"})
       .help(
           R"(Enable colorized output.  This option is equivalent to defining CLICOLOR or COLORTERM in the environment and setting --color=auto.  (See below.)  This functionality can be compiled out by removing the definition of COLORLS.  This option is not defined in IEEE Std 1003.1-2008 (“POSIX.1”).)");
 
@@ -491,7 +491,7 @@ argparse::ArgParser make_ls_parser_unbind() {
   parser.add_flag("F").help(
       R"(Display a slash (‘/’) immediately after each pathname that is a directory, an asterisk (‘*’) after each that is executable, an at sign (‘@’) after each symbolic link, an equals sign (‘=’) after each socket, a percent sign (‘%’) after each whiteout, and a vertical bar (‘|’) after each that is a FIFO.)");
 
-  parser.add_alias_flag("G", "color", "auto")
+  parser.add_alias_flag("G", {"color", "auto"})
       .help(
           R"(Enable colorized output.  This option is equivalent to defining CLICOLOR or COLORTERM in the environment and setting --color=auto.  (See below.)  This functionality can be compiled out by removing the definition of COLORLS.  This option is not defined in IEEE Std 1003.1-2008 (“POSIX.1”).)");
 
