@@ -77,6 +77,7 @@
 
 argparse::ArgParser make_grep_parser() {
   argparse::ArgParser parser;
+  parser.set_program_name("grep");
   parser.add_flag("E,extended-regexp")
       .help("PATTERNS are extended regular expressions");
   parser.add_flag("F,fixed-strings").help("PATTERNS are strings");
@@ -84,8 +85,8 @@ argparse::ArgParser make_grep_parser() {
       .help("PATTERNS are basic regular expressions");
   parser.add_flag("P,perl-regexp")
       .help("PATTERNS are Perl regular expressions");
-  parser.add_option("e,regexp").help("use PATTERNS for matching");
-  parser.add_option("f,file").help("take PATTERNS from FILE");
+  parser.add_option("e,regexp").help("use PATTERNS for matching").value_help("PATTERNS");
+  parser.add_option("f,file").help("take PATTERNS from FILE").value_help("FILE");
   parser.add_option("i,ignore-case,!no-ignore-case")
       .help("ignore case distinctions in patterns and data");
   parser.add_option("w,word-regexp").help("match only whole words");
@@ -97,7 +98,7 @@ argparse::ArgParser make_grep_parser() {
   parser.add_flag("V,version").help("display version information and exit");
   parser.add_flag("help").help("display this help text and exit");
 
-  parser.add_option<int>("m,max-count").help("stop after NUM selected lines");
+  parser.add_option<int>("m,max-count").help("stop after NUM selected lines").value_help("NUM");
   parser.add_flag("b,byte-offset")
       .help("print the byte offset with output lines");
   parser.add_flag("n,line-number").help("print line number with output lines");
@@ -106,34 +107,34 @@ argparse::ArgParser make_grep_parser() {
   parser.add_flag("h,no-filename")
       .help("suppress the file name prefix on output");
   parser.add_option("label").help(
-      "use LABEL as the standard input file name prefix");
+      "use LABEL as the standard input file name prefix").value_help("LABEL");
   parser.add_flag("o,only-matching")
       .help("show only nonempty parts of lines that match");
   parser.add_flag("q,quiet,").help("--silent     suppress all normal output");
   parser.add_option("binary-files")
       .help(
           "assume that binary files are TYPE; TYPE is 'binary', 'text', or "
-          "'without-match'");
+          "'without-match'").value_help("TYPE");
   parser.add_alias_flag("a,text", "binary-files", "text")
       .help("equivalent to --binary-files=text");
   parser.add_alias_flag("-I", "binary-files", "without-match")
       .help("equivalent to --binary-files=without-match");
   parser.add_option("d,directories")
       .help(
-          "how to handle directories; ACTION is 'read', 'recurse', or 'skip'");
+          "how to handle directories; ACTION is 'read', 'recurse', or 'skip'").value_help("ACTION");
   parser.add_option("D,devices")
       .help(
           "how to handle devices, FIFOs and sockets; ACTION is 'read' or "
-          "'skip'");
+          "'skip'").value_help("ACTION");
   parser.add_flag("r,recursive").help("like --directories=recurse");
   parser.add_flag("R,dereference-recursive")
       .help("likewise, but follow all symlinks");
   parser.add_option("include").help(
-      "search only files that match GLOB (a file pattern)");
-  parser.add_option("exclude").help("skip files that match GLOB");
+      "search only files that match GLOB (a file pattern)").value_help("GLOB");
+  parser.add_option("exclude").help("skip files that match GLOB").value_help("GLOB");
   parser.add_option("exclude-from")
-      .help("skip files that match any file pattern from FILE");
-  parser.add_option("exclude-dir").help("skip directories that match GLOB");
+      .help("skip files that match any file pattern from FILE").value_help("FILE");
+  parser.add_option("exclude-dir").help("skip directories that match GLOB").value_help("GLOB");
   parser.add_flag("L,files-without-match")
       .help("print only names of FILEs with no selected lines");
   parser.add_flag("l,files-with-matches")
@@ -144,28 +145,28 @@ argparse::ArgParser make_grep_parser() {
   parser.add_flag("Z,null").help("print 0 byte after FILE name");
 
   parser.add_option<int>("B,before-context")
-      .help("print NUM lines of leading context");
+      .help("print NUM lines of leading context").value_help("NUM");
   parser.add_option<int>("A,after-context")
-      .help("print NUM lines of trailing context");
-  parser.add_option<int>("C,context").help("print NUM lines of output context");
+      .help("print NUM lines of trailing context").value_help("NUM");
+  parser.add_option<int>("C,context").help("print NUM lines of output context").value_help("NUM");
   // TODO:
   // -NUM                      same as --context=NUM
   parser.add_option("group-separator")
-      .help("print SEP on line between matches with context");
-  parser.add_option("no-group-separator")
+      .help("print SEP on line between matches with context").value_help("SEP");
+  parser.add_flag("no-group-separator")
       .help("do not print separator for matches with context");
   parser.add_option("color,colour")
       .help(
           "use markers to highlight the matching strings; WHEN is 'always', "
-          "'never', or 'auto'");
-  parser.add_option("U,binary")
+          "'never', or 'auto'").value_help("WHEN");
+  parser.add_flag("U,binary")
       .help("do not strip CR characters at EOL (MSDOS/Windows)");
 
-  return parser;
-}
+  parser.add_positional("pattern_and_files").value_help("FILES");
 
-argparse::ArgParser make_zip_parser() {
-  argparse::ArgParser parser;
   return parser;
 }
-TEST(grep, add_flag) {}
+TEST(grep, add_flag) {
+  auto parser = make_grep_parser();
+  std::cout << parser.usage() << std::endl;
+}

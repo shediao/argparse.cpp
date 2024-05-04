@@ -221,11 +221,8 @@ TEST(ArgParser, parser0_3) {
   bool flag_1{false};
   bool flag_2{false};
   bool flag_3{false};
-  int flag_v{false};
-  // TODO:
+  int flag_v{0};
   std::map<std::string, std::string> option_e;
-  // std::vector<argparse::pair_split_by<std::string, std::string, '='>>
-  // option_e;
   std::vector<std::string> option_f;
   std::string option_o;
 
@@ -272,16 +269,6 @@ TEST(ArgParser, parser0_3) {
   EXPECT_EQ(flag_2, true);
   EXPECT_EQ(flag_3, true);
   EXPECT_EQ(flag_v, 4);
-
-  EXPECT_EQ(parser.flag("a").as<bool>(), false);
-  EXPECT_EQ(parser.flag("b").as<bool>(), true);
-  EXPECT_EQ(parser.flag("c").as<bool>(), false);
-  EXPECT_EQ(parser.flag("d").as<bool>(), false);
-  EXPECT_EQ(parser.flag("h").as<bool>(), false);
-  EXPECT_EQ(parser.flag("1").as<bool>(), true);
-  EXPECT_EQ(parser.flag("2").as<bool>(), true);
-  EXPECT_EQ(parser.flag("3").as<bool>(), true);
-  EXPECT_EQ(parser.flag("v").as<int>(), 4);
 
   EXPECT_EQ(parser["a"].as<bool>(), false);
   EXPECT_EQ(parser["b"].as<bool>(), true);

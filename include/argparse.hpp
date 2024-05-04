@@ -46,8 +46,8 @@ class bad_value_access : public std::exception {
 
 class invalid_argument : public std::invalid_argument {
  public:
-  invalid_argument(const char* msg) : std::invalid_argument(msg) {}
-  invalid_argument(std::string const& msg) : std::invalid_argument(msg) {}
+  explicit invalid_argument(const char* msg) : std::invalid_argument(msg) {}
+  explicit invalid_argument(std::string const& msg) : std::invalid_argument(msg) {}
 };
 
 namespace {
@@ -223,7 +223,7 @@ struct merge_variant<std::variant<T0, T1...>, std::variant<T2...>> {
 };
 template <typename... T>
 struct make_variant_type {
-  // TODO:
+  // TODO(shediao):
   using type1 =
       typename merge_variant<std::variant<T...>,
                              std::variant<std::reference_wrapper<T>...>>::type;
@@ -257,10 +257,12 @@ inline bool startswith(std::string const& str, std::string const& prefix) {
   }
   auto it = str.begin();
   auto pit = prefix.begin();
-  for (; pit != prefix.end(); it++, pit++) {
+  while(pit != prefix.end()) {
     if (*it != *pit) {
       return false;
     }
+    it++;
+    pit++;
   }
   return true;
 }
@@ -322,7 +324,8 @@ void transform_value(std::string const& from, T& to) {
     std::stringstream ss;
     ss << "'" << from << "' not invalid number";
     throw bad_value_access(ss.str());
-  } else if (ec != std::errc{}) {
+  }
+  if (ec != std::errc{}) {
     std::stringstream ss;
     ss << "'" << from << "'  can't convert to a number";
     throw bad_value_access(ss.str());
@@ -398,43 +401,16 @@ void insert_or_replace_value(T& bind_value,
 }  // namespace
 
 class Base {
-  template <typename T>
-  class DefaultValueVisitor {
-   public:
-    explicit DefaultValueVisitor(T const& def) : default_value(def) {}
-
-    template <typename U>
-    void operator()(U& val) {
-      if constexpr (is_reference_wrapper_v<U>) {
-        if constexpr (std::is_assignable_v<decltype(val.get()),
-                                           decltype(default_value)>) {
-          val.get() = default_value;
-        } else {
-          throw std::bad_variant_access();
-        }
-      } else {
-        if constexpr (std::is_assignable_v<decltype(val),
-                                           decltype(default_value)>) {
-          val = default_value;
-        } else {
-          throw std::bad_variant_access();
-        }
-      }
-    }
-
-   private:
-    T const& default_value;
-  };
   friend class ArgParser;
 
  public:
   enum class Type { FLAG, ALIAS_FLAG, OPTION, POSITIONAL };
   virtual ~Base() = default;
   Base::Type virtual type() const = 0;
-  bool is_flag() { return Type::FLAG == this->type() || is_alias_flag(); };
-  bool is_alias_flag() { return Type::ALIAS_FLAG == this->type(); };
-  bool is_option() { return Type::OPTION == this->type(); };
-  bool is_positional() { return Type::POSITIONAL == this->type(); };
+  bool is_flag() const { return Type::FLAG == this->type() || is_alias_flag(); };
+  bool is_alias_flag() const { return Type::ALIAS_FLAG == this->type(); };
+  bool is_option() const { return Type::OPTION == this->type(); };
+  bool is_positional() const { return Type::POSITIONAL == this->type(); };
 
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
   T const& as() const {
@@ -473,14 +449,37 @@ class Base {
     help_msg = help;
     return *this;
   }
-
-  Base& set_default(std::string const& def_val) {
-    std::visit(DefaultValueVisitor(def_val), value);
+  Base& value_help(std::string const& helper) {
+    this->value_placeholder = helper;
     return *this;
+  }
+
+  // for const char*
+  Base& set_default(std::string const& def_val) {
+    return set_default<std::string>(def_val);
   }
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
   Base& set_default(T const& def_val) {
-    std::visit(DefaultValueVisitor(def_val), value);
+    std::visit(
+        [&def_val](auto& val) {
+          using type = std::remove_reference_t<decltype(val)>;
+          if constexpr (is_reference_wrapper_v<type>) {
+            if constexpr (std::is_assignable_v<decltype(val.get()),
+                                               decltype(def_val)>) {
+              val.get() = def_val;
+            } else {
+              throw std::bad_variant_access();
+            }
+          } else {
+            if constexpr (std::is_assignable_v<decltype(val),
+                                               decltype(def_val)>) {
+              val = def_val;
+            } else {
+              throw std::bad_variant_access();
+            }
+          }
+        },
+        value);
     return *this;
   }
 
@@ -493,19 +492,22 @@ class Base {
   Base(Base const&) = delete;
   Base(Base&&) = delete;
   Base& operator=(Base const&) = delete;
+  Base& operator=(Base &&) = delete;
 
+  using value_type = make_variant_type<bool, int, double, std::string>::type;
  protected:
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
-  Base(identity<T>, T& bind) : value(std::ref(bind)) {}
+  Base(identity<T> /*unused*/, T& bind) : value(std::ref(bind)) {}
 
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
-  explicit Base(identity<T>) : value(T{}) {}
+  explicit Base(identity<T> /*unused*/) : value(T{}) {}
 
   virtual void hit(char short_name) = 0;
   virtual void hit(std::string const& long_name) = 0;
   virtual void hit(char short_name, std::string const& val) = 0;
   virtual void hit(std::string const& long_name, std::string const& val) = 0;
   [[nodiscard]] virtual std::string usage() const = 0;
+  [[nodiscard]] virtual std::string short_usage() const = 0;
 
   [[nodiscard]] virtual bool contains(std::string const& name) const {
     return end(flag_and_option_names) !=
@@ -513,72 +515,13 @@ class Base {
   }
   std::vector<std::string> flag_and_option_names;
   std::string help_msg;
-  using value_type = make_variant_type<bool, int, double, std::string>::type;
-
+  std::string value_placeholder;
   value_type value;
   int hit_count{0};
 };
 class ArgParser;
 class Flag : public Base {
   friend class ArgParser;
-
-  template <typename ShortOrLong>
-  struct FlagValueVisitor {
-    FlagValueVisitor(Flag const& obj, ShortOrLong const& flag)
-        : flagObj{obj}, flag{flag} {}
-    void operator()(bool& x) {
-      if (flagObj.negate_contains(flag)) {
-        x = false;
-      } else if (flagObj.Base::contains(flag)) {
-        x = true;
-      }
-    }
-    void operator()(std::reference_wrapper<bool>& x) {
-      if (flagObj.negate_contains(flag)) {
-        x.get() = false;
-      } else if (flagObj.Base::contains(flag)) {
-        x.get() = true;
-      }
-    }
-
-    template <typename T,
-              std::enable_if_t<is_flag_bindable_value_v<T>, bool> = true>
-    void operator()(T& x) {
-      if (flagObj.negate_contains(flag)) {
-        x -= 1;
-      } else if (flagObj.Base::contains(flag)) {
-        x += 1;
-      }
-    }
-    template <typename T,
-              std::enable_if_t<is_flag_bindable_value_v<T>, bool> = true>
-    void operator()(std::reference_wrapper<T>& x) {
-      if (flagObj.negate_contains(flag)) {
-        x -= 1;
-      } else if (flagObj.Base::contains(flag)) {
-        x += 1;
-      }
-    }
-
-    template <typename T,
-              std::enable_if_t<!is_flag_bindable_value_v<T> &&
-                                   !is_reference_wrapper_v<T>,
-                               bool> = true>
-    void operator()(T&) {
-      assert(false);
-    }
-    template <typename T,
-              std::enable_if_t<!is_flag_bindable_value_v<T> &&
-                                   is_reference_wrapper_v<T>,
-                               bool> = true>
-    void operator()(T&) {
-      assert(false);
-    }
-
-    Flag const& flagObj;
-    ShortOrLong const& flag;
-  };
-
  public:
   Base::Type type() const override { return Base::Type::FLAG; };
 
@@ -604,7 +547,7 @@ class Flag : public Base {
   }
   template <typename T,
             typename = std::enable_if_t<is_flag_bindable_value_v<T>>>
-  Flag(std::string const& flag_desc, Base::identity<T>)
+  Flag(std::string const& flag_desc, Base::identity<T> /*unused*/)
       : Base(typename Base::identity<T>{}) {
     Flag_init(flag_desc);
   }
@@ -622,7 +565,7 @@ class Flag : public Base {
   void hit(char const flag, std::string const& val) override {
     hit(std::string(1, flag), val);
   }
-  void hit(std::string const& flag, std::string const& val) override {
+  void hit(std::string const&  /*flag*/, std::string const&  /*val*/) override {
     assert(false);
   }
 
@@ -651,10 +594,13 @@ class Flag : public Base {
     }
     return ss.str();
   }
+  [[nodiscard]] std::string short_usage() const override {
+    return "";
+  }
 
  private:
   void Flag_init(std::string const& flag_desc) {
-    // TODO:
+    // TODO(shediao): 
     // flag is ,
     auto all = StringUtil::split(flag_desc, ',');
     assert(!all.empty());
@@ -685,10 +631,60 @@ class Flag : public Base {
   template <typename ShortOrLong>
   void hit_impl(ShortOrLong const& flag) {
     hit_count++;
-    std::visit(FlagValueVisitor(*this, flag), value);
+    std::visit(overloaded{
+        [this, &flag](bool& val){
+          if (negate_contains(flag)) {
+            val = false;
+          } else if (Base::contains(flag)) {
+            val = true;
+          } else {
+            // throw execption
+          }
+        },
+        [this, &flag](std::reference_wrapper<bool>& val){
+          if (negate_contains(flag)) {
+            val.get() = false;
+          } else if (Base::contains(flag)) {
+            val.get() = true;
+          } else {
+            // throw execption
+          }
+        },
+        [this, &flag](auto& val){
+          using type = std::remove_reference_t<decltype(val)>;
+          if constexpr (is_reference_wrapper_v<type>) {
+            if constexpr (is_flag_bindable_value_v<typename type::type>) {
+              if (negate_contains(flag)) {
+                val.get() -= 1;
+              } else if (Base::contains(flag)) {
+                val.get() += 1;
+              } else {
+                assert(false);
+                //TODO(shediao): throw execption
+              }
+            } else {
+              assert(false);
+              //TODO(shediao): throw execption
+            }
+          } else {
+            if constexpr (is_flag_bindable_value_v<type>) {
+              if (negate_contains(flag)) {
+                val -= 1;
+              } else if (Base::contains(flag)) {
+                val += 1;
+              } else {
+                assert(false);
+                //TODO(shediao): throw execption
+              }
+            } else {
+              assert(false);
+              //TODO(shediao): throw execption
+            }
+          }
+        }
+        }, value);
   }
 
- private:
   std::vector<std::string> negate_flag_names{};
 };
 
@@ -772,10 +768,10 @@ class Option : public Base {
       }
       it++;
     }
-    if (val_help_msg.empty()) {
+    if (value_placeholder.empty()) {
       ss << "=<TEXT>";
     } else {
-      ss << "=<" << val_help_msg << ">";
+      ss << "=<" << value_placeholder << ">";
     }
 
     ss << "\n";
@@ -785,6 +781,9 @@ class Option : public Base {
     }
 
     return ss.str();
+  }
+  [[nodiscard]] std::string short_usage() const override {
+    return "";
   }
 
   void hit(std::string const&, std::string const& val) override {
@@ -824,7 +823,6 @@ class Option : public Base {
   }
 
  private:
-  std::string val_help_msg;
   char delimiter{'\0'};
 };
 
@@ -869,6 +867,9 @@ class Positional : public Base {
   };
 
   [[nodiscard]] std::string usage() const override { return ""; };
+  [[nodiscard]] std::string short_usage() const override {
+    return "";
+  }
 
  protected:
   template <typename T>
@@ -889,15 +890,15 @@ class Positional : public Base {
 class ArgParser {
   class FlagNotFoundException : public std::exception {
    public:
-    const char* what() { return "Flag not found Exception"; }
+    const char* what() const noexcept { return "Flag not found Exception"; }
   };
   class OptionNotFoundException : public std::exception {
    public:
-    const char* what() { return "Option not found Exception"; }
+    const char* what() const noexcept { return "Option not found Exception"; }
   };
   class PositionalFoundException : public std::exception {
    public:
-    const char* what() { return "Positional not found Exception"; }
+    const char* what() const noexcept { return "Positional not found Exception"; }
   };
 
   struct PositionValueVisitor {
@@ -918,8 +919,8 @@ class ArgParser {
 
  public:
   ArgParser() = default;
-  explicit ArgParser(std::string description)
-      : description(std::move(description)) {}
+  explicit ArgParser(std::string const& desc)
+      : description(desc) {}
 
   ArgParser& set_program_name(std::string const& programName) {
     this->program_name = programName;
@@ -947,7 +948,7 @@ class ArgParser {
                             std::string const& option_name,
                             std::string const& option_value) {
     auto x = AliasFlag::make_flag(flag_desc, option_name, option_value);
-    auto p = x.get();
+    auto *p = x.get();
     all_options.push_back(std::move(x));
     return *p;
   }
@@ -1042,12 +1043,12 @@ class ArgParser {
 
   std::string usage() {
     std::stringstream ss;
-    ss << (program_name.empty() ? "?" : program_name) << " [OPTION]... ";
+    ss << "\n" << (program_name.empty() ? "?" : program_name) << " [OPTION]... ";
     if (!any_of(begin(all_options), end(all_options),
                 [](auto& o) { return o->is_positional(); })) {
       ss << " [--] [args....]";
     }
-    ss << "\n\n";
+    ss << "\n";
     ss << description << "\n\n";
     for (auto& all_option : all_options) {
       ss << all_option->usage() << "\n";
@@ -1239,40 +1240,8 @@ class ArgParser {
     auto x = get(f);
     if (x.has_value()) {
       return *(x.value());
-    } else {
-      throw FlagNotFoundException{};
-    }
-  }
-
-  Flag& flag(std::string const& f) {
-    auto it = find_if(
-        begin(all_options), end(all_options),
-        [&f](auto const& f1) { return f1->is_flag() && f1->contains(f); });
-    if (it != end(all_options)) {
-      return *dynamic_cast<Flag*>((*it).get());
     }
     throw FlagNotFoundException{};
-  }
-
-  Option& option(std::string const& opt) {
-    auto it = find_if(
-        begin(all_options), end(all_options),
-        [&opt](auto const& f) { return f->is_option() && f->contains(opt); });
-    if (end(all_options) != it) {
-      return *dynamic_cast<Option*>((*it).get());
-    }
-    throw OptionNotFoundException{};
-  }
-
-  Positional& positional(std::string const& position_name) {
-    auto it = find_if(begin(all_options), end(all_options),
-                      [&position_name](auto const& f) {
-                        return f->is_positional() && f->contains(position_name);
-                      });
-    if (end(all_options) != it) {
-      return *dynamic_cast<Positional*>((*it).get());
-    }
-    throw PositionalFoundException{};
   }
 
  private:
