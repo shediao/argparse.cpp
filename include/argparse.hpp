@@ -18,6 +18,7 @@
 //     12. top100 linux command test
 //     13. subcommand support
 //     14. throw execption
+//     15. CHECK & DCHECK
 
 #include <algorithm>
 #include <cassert>
@@ -27,6 +28,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -35,6 +37,9 @@
 
 namespace argparse {
 
+inline void UNREACHABLE() {
+  assert(false);
+}
 class bad_value_access : public std::exception {
  public:
   explicit bad_value_access(std::string msg) : msg(std::move(msg)) {}
@@ -51,7 +56,24 @@ class invalid_argument : public std::invalid_argument {
       : std::invalid_argument(msg) {}
 };
 
-namespace {
+class flag_not_found : public std::exception {
+ public:
+  const char* what() const noexcept override {
+    return "Flag not found Exception";
+  }
+};
+class option_not_found : public std::exception {
+ public:
+  const char* what() const noexcept override {
+    return "Option not found Exception";
+  }
+};
+class positional_not_found : public std::exception {
+ public:
+  const char* what() const noexcept override {
+    return "Positional not found Exception";
+  }
+};
 
 template <typename T>
 struct is_reference_wrapper : std::false_type {};
@@ -117,11 +139,13 @@ struct is_transformable_type<
 template <typename T, typename U>
 struct is_transformable_type<
     std::pair<T, U>,
-    std::enable_if_t<
-        (std::is_same_v<bool, T> || std::is_same_v<int, T> ||
-         std::is_same_v<double, T> || std::is_same_v<std::string, T>) &&
-        (std::is_same_v<bool, U> || std::is_same_v<int, U> ||
-         std::is_same_v<double, U> || std::is_same_v<std::string, U>)>>
+    std::enable_if_t<(
+        std::is_same_v<bool, T> || std::is_same_v<int, T> ||
+        std::is_same_v<double, T> ||
+        std::is_same_v<std::string, T>)&&(std::is_same_v<bool, U> ||
+                                          std::is_same_v<int, U> ||
+                                          std::is_same_v<double, U> ||
+                                          std::is_same_v<std::string, U>)>>
     : std::true_type {};
 
 template <typename T>
@@ -399,7 +423,6 @@ void insert_or_replace_value(T& bind_value,
   }
   bind_value = std::move(result);
 }
-}  // namespace
 
 class Base {
   friend class ArgParser;
@@ -437,7 +460,6 @@ class Base {
       } else {
         throw std::bad_variant_access();
       }
-      assert(is_option_bindable_value_v<T>);
     } else if (is_positional()) {
       if constexpr (is_position_bindable_value_v<T>) {
         value = std::ref(bind_val);
@@ -517,6 +539,16 @@ class Base {
     return end(flag_and_option_names) !=
            find(begin(flag_and_option_names), end(flag_and_option_names), name);
   }
+  void add_option_name(std::string opt_name) {
+    flag_and_option_names.push_back(std::move(opt_name));
+  }
+  std::vector<std::string> const& option_names() const {
+    return flag_and_option_names;
+  }
+
+  std::string const& get_value_help() const { return value_placeholder; }
+  std::string const& get_help() const { return help_msg; }
+  void increment_count() { hit_count++; }
   std::vector<std::string> flag_and_option_names;
   std::string help_msg;
   std::string value_placeholder;
@@ -571,13 +603,13 @@ class Flag : public Base {
     hit(std::string(1, flag), val);
   }
   void hit(std::string const& /*flag*/, std::string const& /*val*/) override {
-    assert(false);
+    UNREACHABLE();
   }
 
   [[nodiscard]] std::string usage() const override {
     std::stringstream ss;
-    auto it = begin(flag_and_option_names);
-    if (it != end(flag_and_option_names)) {
+    auto it = begin(option_names());
+    if (it != end(option_names())) {
       if (it->length() == 1) {
         ss << "-" << *it;
       } else {
@@ -585,7 +617,7 @@ class Flag : public Base {
       }
       it++;
     }
-    if (it != end(flag_and_option_names)) {
+    if (it != end(option_names())) {
       if (it->length() == 1) {
         ss << ",-" << *it;
       } else {
@@ -594,8 +626,8 @@ class Flag : public Base {
       it++;
     }
     ss << "\n";
-    if (!help_msg.empty()) {
-      ss << "         " << help_msg << "\n";
+    if (!get_help().empty()) {
+      ss << "         " << get_help() << "\n";
     }
     return ss.str();
   }
@@ -606,10 +638,14 @@ class Flag : public Base {
     // TODO(shediao):
     // flag is ,
     auto all = StringUtil::split(flag_desc, ',');
-    assert(!all.empty());
+    if (all.empty()) {
+      throw std::logic_error("flag name is empty");
+    }
     for (auto f : all) {
       bool is_negate{false};
-      assert(!f.empty());
+      if (f.empty()) {
+        throw std::logic_error("flag item name is empty");
+      }
 
       if (f[0] == '!') {
         is_negate = true;
@@ -622,18 +658,22 @@ class Flag : public Base {
         f = f.substr(1);
       }
 
-      assert(!f.empty());
-      assert(f[0] != '-');
+      if (f.empty()) {
+        throw std::logic_error("flag item name is empty");
+      }
+      if (f[0] == '-') {
+        throw std::logic_error("flag item name is startswith '-'");
+      }
       if (is_negate) {
         negate_flag_names.push_back(f);
       } else {
-        flag_and_option_names.push_back(f);
+        add_option_name(std::move(f));
       }
     }
   }
   template <typename ShortOrLong>
   void hit_impl(ShortOrLong const& flag) {
-    hit_count++;
+    increment_count();
     std::visit(
         overloaded{
             [this, &flag](bool& val) {
@@ -642,7 +682,7 @@ class Flag : public Base {
               } else if (Base::contains(flag)) {
                 val = true;
               } else {
-                // throw execption
+                UNREACHABLE();
               }
             },
             [this, &flag](std::reference_wrapper<bool>& val) {
@@ -651,7 +691,7 @@ class Flag : public Base {
               } else if (Base::contains(flag)) {
                 val.get() = true;
               } else {
-                // throw execption
+                UNREACHABLE();
               }
             },
             [this, &flag](auto& val) {
@@ -663,12 +703,10 @@ class Flag : public Base {
                   } else if (Base::contains(flag)) {
                     val.get() += 1;
                   } else {
-                    assert(false);
-                    // TODO(shediao): throw execption
+                    UNREACHABLE();
                   }
                 } else {
-                  assert(false);
-                  // TODO(shediao): throw execption
+                  UNREACHABLE();
                 }
               } else {
                 if constexpr (is_flag_bindable_value_v<type>) {
@@ -677,12 +715,10 @@ class Flag : public Base {
                   } else if (Base::contains(flag)) {
                     val += 1;
                   } else {
-                    assert(false);
-                    // TODO(shediao): throw execption
+                    UNREACHABLE();
                   }
                 } else {
-                  assert(false);
-                  // TODO(shediao): throw execption
+                  UNREACHABLE();
                 }
               }
             }},
@@ -753,8 +789,8 @@ class Option : public Base {
   }
   [[nodiscard]] std::string usage() const override {
     std::stringstream ss;
-    auto it = begin(flag_and_option_names);
-    if (it != end(flag_and_option_names)) {
+    auto it = begin(option_names());
+    if (it != end(option_names())) {
       if (it->length() == 1) {
         ss << "-" << *it;
       } else {
@@ -763,7 +799,7 @@ class Option : public Base {
       it++;
     }
 
-    if (it != end(flag_and_option_names)) {
+    if (it != end(option_names())) {
       if (it->length() == 1) {
         ss << ",-" << *it;
       } else {
@@ -771,16 +807,16 @@ class Option : public Base {
       }
       it++;
     }
-    if (value_placeholder.empty()) {
+    if (get_value_help().empty()) {
       ss << "=<TEXT>";
     } else {
-      ss << "=<" << value_placeholder << ">";
+      ss << "=<" << get_value_help() << ">";
     }
 
     ss << "\n";
 
-    if (!help_msg.empty()) {
-      ss << "         " << help_msg << "\n";
+    if (!get_help().empty()) {
+      ss << "         " << get_help() << "\n";
     }
 
     return ss.str();
@@ -793,26 +829,30 @@ class Option : public Base {
   void hit(char /*short_name*/, std::string const& val) override {
     return hit_impl(val);
   }
-  void hit(std::string const& /*flag*/) override { assert(false); }
-  void hit(char const /*flag*/) override { assert(false); }
+  void hit(std::string const& /*flag*/) override { UNREACHABLE(); }
+  void hit(char const /*flag*/) override { UNREACHABLE(); }
 
  private:
   void Option_init(std::string const& option_desc) {
     auto all = StringUtil::split(option_desc, ',');
-    assert(!all.empty());
+    if (all.empty()) {
+      throw std::logic_error("option name is empty");
+    }
     for (auto f : all) {
       if (StringUtil::startswith(f, "--")) {
         f = f.substr(2);
       } else if (StringUtil::startswith(f, "-")) {
         f = f.substr(1);
       }
-      assert(!f.empty());
-      flag_and_option_names.push_back(f);
+      if (f.empty()) {
+        throw std::logic_error("option item name is empty");
+      }
+      add_option_name(std::move(f));
     }
   }
 
   void hit_impl(std::string const& opt_val) {
-    hit_count++;
+    increment_count();
     std::visit(
         [&opt_val, this](auto& x) {
           using T = std::remove_reference_t<decltype(x)>;
@@ -846,10 +886,10 @@ class Positional : public Base {
         new Positional(name, Base::identity<T>{}));
   }
 
-  void hit(char /*short_name*/) override { assert(false); };
-  void hit(std::string const& /*long_name*/) override { assert(false); };
+  void hit(char /*short_name*/) override { UNREACHABLE(); };
+  void hit(std::string const& /*long_name*/) override { UNREACHABLE(); };
   void hit(char /*short_name*/, std::string const& val) override {
-    assert(false);
+    UNREACHABLE();
   };
   void hit(std::string const& long_name, std::string const& val) override {
     std::visit(overloaded{[&val, this](auto& v) {
@@ -876,38 +916,19 @@ class Positional : public Base {
   template <typename T>
   Positional(std::string const& name, T& bind)
       : Base(Base::identity<T>{}, bind) {
-    flag_and_option_names.push_back(name);
+    add_option_name(name);
   }
 
   template <typename T>
   Positional(std::string const& name, Base::identity<T>)
       : Base(Base::identity<T>{}) {
-    flag_and_option_names.push_back(name);
+    add_option_name(name);
   }
   bool can_set_value{true};
   char delimiter{'\0'};
 };
 
 class ArgParser {
-  class FlagNotFoundException : public std::exception {
-   public:
-    const char* what() const noexcept override {
-      return "Flag not found Exception";
-    }
-  };
-  class OptionNotFoundException : public std::exception {
-   public:
-    const char* what() const noexcept override {
-      return "Option not found Exception";
-    }
-  };
-  class PositionalFoundException : public std::exception {
-   public:
-    const char* what() const noexcept override {
-      return "Positional not found Exception";
-    }
-  };
-
  public:
   ArgParser() = default;
   explicit ArgParser(std::string desc) : description(std::move(desc)) {}
@@ -934,8 +955,9 @@ class ArgParser {
     all_options.push_back(std::move(x));
     return *p;
   }
-  AliasFlag& add_alias_flag(std::string const& flag_desc,
-                            std::pair<std::string, std::string> option_key_value) {
+  AliasFlag& add_alias_flag(
+      std::string const& flag_desc,
+      std::pair<std::string, std::string> option_key_value) {
     auto x = AliasFlag::make_flag(flag_desc, std::move(option_key_value));
     auto* p = x.get();
     all_options.push_back(std::move(x));
@@ -1051,7 +1073,7 @@ class ArgParser {
     unknown_option_as_start_of_positionals = true;
   }
 
-  std::pair<int, std::string> parse(int argc, const char* argv[]) {
+  std::pair<int, std::string> parse(int argc, const char** argv) {
     std::vector<std::string> command_line_args{argv, argv + argc};
 
     if (command_line_args.empty()) {
@@ -1118,7 +1140,7 @@ class ArgParser {
                 option.value()->hit(alis_flag->option_name,
                                     alis_flag->option_value);
               } else {
-                assert(false);
+                UNREACHABLE();
               }
             }
             short_p++;
@@ -1192,8 +1214,7 @@ class ArgParser {
         }
         current = next;
       } else {
-        assert(false);
-        // CHECK(false)
+        UNREACHABLE();
       }
     }
 
@@ -1229,7 +1250,7 @@ class ArgParser {
     if (x.has_value()) {
       return *(x.value());
     }
-    throw FlagNotFoundException{};
+    throw option_not_found{};
   }
 
  private:
