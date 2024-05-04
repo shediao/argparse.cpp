@@ -485,8 +485,10 @@ argparse::ArgParser make_ls_parser_unbind() {
   parser.add_flag("C").help(
       R"(Force multi-column output; this is the default when output is to a terminal.)");
 
-  parser.add_option("D").help(
-      R"(When printing in the long (-l) format, use format to format the date and time output.  The argument format is a string used by strftime(3).  Depending on the choice of format string, this may result in a different number of columns in the output.  This option overrides the -T option.  This option is not defined in IEEE Std 1003.1-2008 (“POSIX.1”).)");
+  parser.add_option("D")
+      .help(
+          R"(When printing in the long (-l) format, use format to format the date and time output.  The argument format is a string used by strftime(3).  Depending on the choice of format string, this may result in a different number of columns in the output.  This option overrides the -T option.  This option is not defined in IEEE Std 1003.1-2008 (“POSIX.1”).)")
+      .value_help("FORMAT");
 
   parser.add_flag("F").help(
       R"(Display a slash (‘/’) immediately after each pathname that is a directory, an asterisk (‘*’) after each that is executable, an at sign (‘@’) after each symbolic link, an equals sign (‘=’) after each socket, a percent sign (‘%’) after each whiteout, and a vertical bar (‘|’) after each that is a FIFO.)");

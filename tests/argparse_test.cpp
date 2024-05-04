@@ -15,7 +15,7 @@ TEST(Base, count0) {
   ASSERT_EQ(2, parser["d"].count());
 
   ASSERT_TRUE(parser["debug"].as<bool>());
-  ASSERT_THROW(parser["debug"].as<int>(), std::bad_variant_access);
+  ASSERT_THROW(parser["debug"].as<int>(), argparse::bad_value_access);
 }
 
 TEST(Base, count1) {
@@ -33,7 +33,7 @@ TEST(Base, count1) {
   ASSERT_EQ(5, parser["d"].count());
 
   ASSERT_TRUE(parser["debug"].as<bool>());
-  ASSERT_THROW(parser["debug"].as<int>(), std::bad_variant_access);
+  ASSERT_THROW(parser["debug"].as<int>(), argparse::bad_value_access);
 }
 
 TEST(Base, is_flag) {
@@ -59,9 +59,9 @@ TEST(Base, as) {
   ASSERT_FALSE(parser["debug"].as<bool>());
   ASSERT_EQ(parser["type"].as<std::string>(), "");
 
-  ASSERT_THROW(parser["debug"].as<int>(), std::bad_variant_access);
-  ASSERT_THROW(parser["type"].as<int>(), std::bad_variant_access);
-  ASSERT_THROW(parser["verbose"].as<int>(), std::bad_variant_access);
+  ASSERT_THROW(parser["debug"].as<int>(), argparse::bad_value_access);
+  ASSERT_THROW(parser["type"].as<int>(), argparse::bad_value_access);
+  ASSERT_THROW(parser["verbose"].as<int>(), argparse::bad_value_access);
 }
 
 TEST(Base, as1) {
@@ -70,7 +70,7 @@ TEST(Base, as1) {
   parser.add_flag("v,verbose", verbose);
   parser.add_option<std::vector<std::string>>("i,input");
 
-  ASSERT_THROW(parser["input"].as<std::string>(), std::bad_variant_access);
+  ASSERT_THROW(parser["input"].as<std::string>(), argparse::bad_value_access);
   ASSERT_TRUE(parser["input"].as<std::vector<std::string>>().empty());
 
   std::vector<const char*> cmd{"argparser", "-i",    "file1",

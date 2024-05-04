@@ -274,6 +274,48 @@ struct make_variant_type {
       type5>::type;
 };
 
+template <typename T>
+struct bindable_type_info;
+
+template <>
+struct bindable_type_info<bool> {
+  inline static std::string name() { return "bool"; }
+};
+template <>
+struct bindable_type_info<int> {
+  inline static std::string name() { return "int"; }
+};
+template <>
+struct bindable_type_info<double> {
+  inline static std::string name() { return "double"; }
+};
+template <>
+struct bindable_type_info<std::string> {
+  inline static std::string name() { return "std::string"; }
+};
+
+template <typename T, typename U>
+struct bindable_type_info<std::pair<T, U>> {
+  inline static std::string name() {
+    return std::string("std::pair<") + bindable_type_info<T>::name() + "," +
+           bindable_type_info<U>::name() + ">";
+  }
+};
+template <typename T, typename U>
+struct bindable_type_info<std::map<T, U>> {
+  inline static std::string name() {
+    return std::string("std::map<") + bindable_type_info<T>::name() + "," +
+           bindable_type_info<U>::name() + ">";
+  }
+};
+
+template <typename T>
+struct bindable_type_info<std::vector<T>> {
+  inline static std::string name() {
+    return std::string("std::vector<") + bindable_type_info<T>::name() + ">";
+  }
+};
+
 //**********************************
 namespace StringUtil {
 inline bool startswith(std::string const& str, std::string const& prefix) {
@@ -334,9 +376,8 @@ void transform_value(std::string const& from, T& to) {
   } else if (lower_from == "false") {
     to = false;
   } else {
-    std::stringstream ss;
-    ss << "'" << from << "' is neither 'true' nor 'false'";
-    throw bad_value_access(ss.str());
+    throw bad_value_access(std::string("err: ") + "'" + from + "'" + " => " +
+                           bindable_type_info<T>::name());
   }
 }
 
@@ -345,15 +386,9 @@ template <typename T,
                            bool> = true>
 void transform_value(std::string const& from, T& to) {
   auto [ptr, ec] = std::from_chars(from.data(), from.data() + from.size(), to);
-  if (ec == std::errc::invalid_argument) {
-    std::stringstream ss;
-    ss << "'" << from << "' not invalid number";
-    throw bad_value_access(ss.str());
-  }
-  if (ec != std::errc{}) {
-    std::stringstream ss;
-    ss << "'" << from << "'  can't convert to a number";
-    throw bad_value_access(ss.str());
+  if (ec == std::errc::invalid_argument || ec != std::errc{}) {
+    throw bad_value_access(std::string("err: ") + "'" + from + "'" + " => " +
+                           bindable_type_info<T>::name());
   }
 }
 
@@ -362,7 +397,8 @@ void transform_value(std::string const& from, T& to) {
   try {
     to = std::stod(from, nullptr);
   } catch (std::invalid_argument const& e) {
-    throw invalid_argument(e.what());
+    throw bad_value_access(std::string(e.what()) + ": '" + from + "'" + " => " +
+                           bindable_type_info<T>::name());
   }
 }
 
@@ -427,8 +463,10 @@ void insert_or_replace_value(T& bind_value,
 class Base {
   friend class ArgParser;
 
- public:
+ protected:
   enum class Type { FLAG, ALIAS_FLAG, OPTION, POSITIONAL };
+
+ public:
   virtual ~Base() = default;
   Base::Type virtual type() const = 0;
   bool is_flag() const {
@@ -440,10 +478,15 @@ class Base {
 
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
   T const& as() const {
-    if (std::holds_alternative<std::reference_wrapper<T>>(value)) {
-      return std::get<std::reference_wrapper<T>>(value).get();
+    try {
+      if (std::holds_alternative<std::reference_wrapper<T>>(value)) {
+        return std::get<std::reference_wrapper<T>>(value).get();
+      }
+      return std::get<T>(value);
+    } catch (std::bad_variant_access const& e) {
+      throw bad_value_access(std::string(e.what()) + ": " + value_type_name() +
+                             " => " + bindable_type_info<T>::name());
     }
-    return std::get<T>(value);
   }
 
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
@@ -452,19 +495,22 @@ class Base {
       if constexpr (is_flag_bindable_value_v<T>) {
         value = std::ref(bind_val);
       } else {
-        throw std::bad_variant_access();
+        throw bad_value_access(std::string("flag can't bind the type: ") +
+                               bindable_type_info<T>::name());
       }
     } else if (is_option()) {
       if constexpr (is_option_bindable_value_v<T>) {
         value = std::ref(bind_val);
       } else {
-        throw std::bad_variant_access();
+        throw bad_value_access(std::string("option can't bind the type: ") +
+                               bindable_type_info<T>::name());
       }
     } else if (is_positional()) {
       if constexpr (is_position_bindable_value_v<T>) {
         value = std::ref(bind_val);
       } else {
-        throw std::bad_variant_access();
+        throw bad_value_access(std::string("positional can't bind the type: ") +
+                               bindable_type_info<T>::name());
       }
     }
     return *this;
@@ -486,21 +532,23 @@ class Base {
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
   Base& set_default(T const& def_val) {
     std::visit(
-        [&def_val](auto& val) {
+        [this, &def_val](auto& val) {
           using type = std::remove_reference_t<decltype(val)>;
           if constexpr (is_reference_wrapper_v<type>) {
             if constexpr (std::is_assignable_v<decltype(val.get()),
                                                decltype(def_val)>) {
               val.get() = def_val;
             } else {
-              throw std::bad_variant_access();
+              throw bad_value_access(std::string("err: ") + value_type_name() +
+                                     " <= " + bindable_type_info<T>::name());
             }
           } else {
             if constexpr (std::is_assignable_v<decltype(val),
                                                decltype(def_val)>) {
               val = def_val;
             } else {
-              throw std::bad_variant_access();
+              throw bad_value_access(std::string("err: ") + value_type_name() +
+                                     " <= " + bindable_type_info<T>::name());
             }
           }
         },
@@ -509,19 +557,18 @@ class Base {
   }
 
   [[nodiscard]] int count() const { return hit_count; }
-  template <typename T>
-  struct identity {
-    using type = T;
-  };
-
   Base(Base const&) = delete;
   Base(Base&&) = delete;
   Base& operator=(Base const&) = delete;
   Base& operator=(Base&&) = delete;
 
-  using value_type = make_variant_type<bool, int, double, std::string>::type;
-
  protected:
+  using value_type = make_variant_type<bool, int, double, std::string>::type;
+  template <typename T>
+  struct identity {
+    using type = T;
+  };
+
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
   Base(identity<T> /*unused*/, T& bind) : value(std::ref(bind)) {}
 
@@ -544,6 +591,20 @@ class Base {
   }
   std::vector<std::string> const& option_names() const {
     return flag_and_option_names;
+  }
+
+  std::string value_type_name() const {
+    return std::visit(
+        overloaded{[](auto& v) {
+          using type =
+              std::remove_const_t<std::remove_reference_t<decltype(v)>>;
+          if constexpr (is_reference_wrapper_v<type>) {
+            return bindable_type_info<typename type::type>::name();
+          } else {
+            return bindable_type_info<type>::name();
+          }
+        }},
+        value);
   }
 
   std::string const& get_value_help() const { return value_placeholder; }
