@@ -1,9 +1,8 @@
-#include "argparse.hpp"
 #include <gtest/gtest.h>
+#include "argparse.hpp"
 
-argparse::ArgParser make_zip_parser(){
+argparse::ArgParser make_zip_parser() {
   argparse::ArgParser parser;
   return parser;
 }
-TEST(groupmode, add_flag){
-}
+TEST(groupmode, add_flag) {}

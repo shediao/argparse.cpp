@@ -1,6 +1,6 @@
 
-#include <argparse.hpp>
 #include <gtest/gtest.h>
+#include <argparse.hpp>
 
 /* ****************************************************************************
  * NAME

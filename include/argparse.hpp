@@ -37,10 +37,8 @@ namespace argparse {
 
 class bad_value_access : public std::exception {
  public:
-  explicit bad_value_access(std::string msg):msg(std::move(msg)) { }
-  const char* what() const noexcept override {
-    return msg.c_str();
-  }
+  explicit bad_value_access(std::string msg) : msg(std::move(msg)) {}
+  const char* what() const noexcept override { return msg.c_str(); }
 
  private:
   std::string msg;
@@ -48,14 +46,9 @@ class bad_value_access : public std::exception {
 
 class invalid_argument : public std::invalid_argument {
  public:
- invalid_argument(const char* msg): std::invalid_argument(msg){}
- invalid_argument(std::string const& msg): std::invalid_argument(msg){}
+  invalid_argument(const char* msg) : std::invalid_argument(msg) {}
+  invalid_argument(std::string const& msg) : std::invalid_argument(msg) {}
 };
-
-template <typename = std::string, char delim = ','>
-class list_split_by;
-template <typename = std::string, typename = std::string, char delim = '='>
-class pair_split_by;
 
 namespace {
 
@@ -69,90 +62,66 @@ template <typename T>
 inline constexpr bool is_reference_wrapper_v = is_reference_wrapper<T>::value;
 
 template <typename T>
-struct is_vector: std::false_type{};
+struct is_vector : std::false_type {};
 template <typename T>
-struct is_vector<std::vector<T>>: std::true_type{};
+struct is_vector<std::vector<T>> : std::true_type {};
 template <typename T>
 inline constexpr bool is_vector_v = is_vector<T>::value;
 
 template <typename T>
-struct is_pair: std::false_type{};
-template <typename T,typename U>
-struct is_pair<std::pair<T, U>>: std::true_type {};
+struct is_pair : std::false_type {};
+template <typename T, typename U>
+struct is_pair<std::pair<T, U>> : std::true_type {};
 template <typename T>
 inline constexpr bool is_pair_v = is_pair<T>::value;
 
 template <typename T>
-struct is_map: std::false_type{};
-template <typename T,typename U>
-struct is_map<std::map<T, U>>: std::true_type {};
+struct is_map : std::false_type {};
+template <typename T, typename U>
+struct is_map<std::map<T, U>> : std::true_type {};
 template <typename T>
 inline constexpr bool is_map_v = is_map<T>::value;
 
 template <typename T>
-struct is_need_split: std::false_type{};
+struct is_need_split : std::false_type {};
 template <typename T, typename U>
-struct is_need_split<std::pair<T, U>>: std::true_type{};
+struct is_need_split<std::pair<T, U>> : std::true_type {};
 template <typename T, typename U>
-struct is_need_split<std::vector<std::pair<T, U>>>: std::true_type{};
+struct is_need_split<std::vector<std::pair<T, U>>> : std::true_type {};
 template <typename T, typename U>
-struct is_need_split<std::map<T, U>>: std::true_type{};
+struct is_need_split<std::map<T, U>> : std::true_type {};
 template <typename T>
-struct is_need_split<std::vector<std::vector<T>>>: std::true_type{};
+struct is_need_split<std::vector<std::vector<T>>> : std::true_type {};
 template <typename T>
 inline constexpr bool is_need_split_v = is_need_split<T>::value;
 
 template <typename T>
-struct default_delimiter: std::integral_constant<char, '='>{};
+struct default_delimiter : std::integral_constant<char, '='> {};
 template <typename T>
-struct default_delimiter<std::vector<std::vector<T>>>: std::integral_constant<char, ','>{};
+struct default_delimiter<std::vector<std::vector<T>>>
+    : std::integral_constant<char, ','> {};
 template <typename T>
 inline constexpr char default_delimiter_v = default_delimiter<T>::value;
 
-template <typename T>
-struct is_list_split_by: std::false_type{};
-template <typename T, char delim>
-struct is_list_split_by<list_split_by<T, delim>>: std::true_type{};
-template <typename T>
-inline constexpr bool is_list_split_by_v = is_list_split_by<T>::value;
-
-template <typename T>
-struct is_pair_split_by: std::false_type{};
-template <typename T, typename U, char delim>
-struct is_pair_split_by<pair_split_by<T, U, delim>>: std::true_type{};
-template <typename T>
-inline constexpr bool is_pair_split_by_v = is_pair_split_by<T>::value;
-
 template <typename T, typename = void>
-struct is_transformable_type: std::false_type{};
+struct is_transformable_type : std::false_type {};
 
 template <typename T>
-struct is_transformable_type<T, std::enable_if_t<
-    std::is_same_v<bool, T> ||
-    std::is_same_v<int, T> ||
-    std::is_same_v<double, T> ||
-    std::is_same_v<std::string, T>
->>: std::true_type{};
+struct is_transformable_type<
+    T,
+    std::enable_if_t<std::is_same_v<bool, T> || std::is_same_v<int, T> ||
+                     std::is_same_v<double, T> ||
+                     std::is_same_v<std::string, T>>> : std::true_type {};
 
-template <typename T, char delim>
-struct is_transformable_type<list_split_by<T, delim>, std::enable_if_t<
-    std::is_same_v<bool, T> ||
-    std::is_same_v<int, T> ||
-    std::is_same_v<double, T> ||
-    std::is_same_v<std::string, T>
->>: std::true_type{};
-
-template <typename T,typename U, char delim>
-struct is_transformable_type<pair_split_by<T, U, delim>, std::enable_if_t<
-    (std::is_same_v<bool, T> || std::is_same_v<int, T> || std::is_same_v<double, T> || std::is_same_v<std::string, T>) &&
-    ( std::is_same_v<bool, U> || std::is_same_v<int, U> || std::is_same_v<double, U> || std::is_same_v<std::string, U>)
->>: std::true_type{};
-
-template <typename T,typename U>
-struct is_transformable_type<std::pair<T, U>, std::enable_if_t<
-    (std::is_same_v<bool, T> || std::is_same_v<int, T> || std::is_same_v<double, T> || std::is_same_v<std::string, T>) &&
-    ( std::is_same_v<bool, U> || std::is_same_v<int, U> || std::is_same_v<double, U> || std::is_same_v<std::string, U>)
->>: std::true_type{};
+template <typename T, typename U>
+struct is_transformable_type<
+    std::pair<T, U>,
+    std::enable_if_t<
+        (std::is_same_v<bool, T> || std::is_same_v<int, T> ||
+         std::is_same_v<double, T> || std::is_same_v<std::string, T>) &&
+        (std::is_same_v<bool, U> || std::is_same_v<int, U> ||
+         std::is_same_v<double, U> || std::is_same_v<std::string, U>)>>
+    : std::true_type {};
 
 template <typename T>
 inline constexpr bool is_transformable_type_v = is_transformable_type<T>::value;
@@ -174,15 +143,12 @@ template <typename T, typename = void>
 struct is_option_bindable_value : std::false_type {};
 
 template <typename T>
-struct is_option_bindable_value<
-    T,
-    std::enable_if_t<is_transformable_type_v<T>>>
+struct is_option_bindable_value<T, std::enable_if_t<is_transformable_type_v<T>>>
     : std::true_type {};
 
 template <typename T>
-struct is_option_bindable_value<
-    std::vector<T>,
-    std::enable_if_t<is_transformable_type_v<T>>>
+struct is_option_bindable_value<std::vector<T>,
+                                std::enable_if_t<is_transformable_type_v<T>>>
     : std::true_type {};
 
 template <typename T, typename U>
@@ -199,17 +165,23 @@ template <typename T, typename = void>
 struct is_position_bindable_value : std::false_type {};
 
 template <typename T>
-struct is_position_bindable_value<T, std::enable_if_t<is_transformable_type_v<T>>> : std::true_type {};
+struct is_position_bindable_value<T,
+                                  std::enable_if_t<is_transformable_type_v<T>>>
+    : std::true_type {};
 
 template <typename T>
-struct is_position_bindable_value<std::vector<T>, std::enable_if_t<is_transformable_type_v<T>>> : std::true_type {};
+struct is_position_bindable_value<std::vector<T>,
+                                  std::enable_if_t<is_transformable_type_v<T>>>
+    : std::true_type {};
 
 template <typename T>
 inline constexpr bool is_position_bindable_value_v =
     is_position_bindable_value<T>::value;
 
 template <typename T>
-inline constexpr bool is_bindable_value_v = is_flag_bindable_value_v<T> || is_option_bindable_value_v<T> || is_position_bindable_value_v<T>;
+inline constexpr bool is_bindable_value_v =
+    is_flag_bindable_value_v<T> || is_option_bindable_value_v<T> ||
+    is_position_bindable_value_v<T>;
 
 // overloaded
 template <typename... T>
@@ -238,24 +210,44 @@ template <typename T>
 constexpr bool is_option_bindable_container_v =
     is_option_bindable_container<T>::value;
 
-
 template <typename T1, typename T2>
 struct merge_variant;
 template <typename T1, typename... T2>
-struct merge_variant<std::variant<T1>, std::variant<T2...>>{ using type = std::variant<T1, T2...>; };
+struct merge_variant<std::variant<T1>, std::variant<T2...>> {
+  using type = std::variant<T1, T2...>;
+};
 template <typename T0, typename... T1, typename... T2>
-struct merge_variant<std::variant<T0, T1...>, std::variant<T2...>>{ using type = typename merge_variant<std::variant<T1...>, std::variant<T0, T2...>>::type; };
+struct merge_variant<std::variant<T0, T1...>, std::variant<T2...>> {
+  using type = typename merge_variant<std::variant<T1...>,
+                                      std::variant<T0, T2...>>::type;
+};
 template <typename... T>
 struct make_variant_type {
-  using type1 = typename merge_variant<std::variant<T...>, std::variant<std::reference_wrapper<T>...>>::type;
-  using type2 = typename merge_variant<std::variant<std::vector<T>...>, std::variant<std::reference_wrapper<std::vector<T>>...>>::type;
-  using type3 = typename merge_variant<std::variant<std::pair<std::string, T>...>, std::variant<std::reference_wrapper<std::pair<std::string, T>>...>>::type;
-  using type4 = typename merge_variant<std::variant<std::vector<std::pair<std::string, T>>...>, std::variant<std::reference_wrapper<std::vector<std::pair<std::string, T>>>...>>::type;
-  using type5 = typename merge_variant<std::variant<std::map<std::string, T>...>, std::variant<std::reference_wrapper<std::map<std::string, T>>...>>::type;
+  // TODO:
+  using type1 =
+      typename merge_variant<std::variant<T...>,
+                             std::variant<std::reference_wrapper<T>...>>::type;
+  using type2 = typename merge_variant<
+      std::variant<std::vector<T>...>,
+      std::variant<std::reference_wrapper<std::vector<T>>...>>::type;
+  using type3 = typename merge_variant<
+      std::variant<std::pair<std::string, T>...>,
+      std::variant<std::reference_wrapper<std::pair<std::string, T>>...>>::type;
+  using type4 = typename merge_variant<
+      std::variant<std::vector<std::pair<std::string, T>>...>,
+      std::variant<std::reference_wrapper<
+          std::vector<std::pair<std::string, T>>>...>>::type;
+  using type5 = typename merge_variant<
+      std::variant<std::map<std::string, T>...>,
+      std::variant<std::reference_wrapper<std::map<std::string, T>>...>>::type;
 
-  using type = typename merge_variant<typename merge_variant<typename merge_variant<typename merge_variant<type1, type2>::type, type3>::type, type4>::type, type5>::type;
+  using type = typename merge_variant<
+      typename merge_variant<
+          typename merge_variant<typename merge_variant<type1, type2>::type,
+                                 type3>::type,
+          type4>::type,
+      type5>::type;
 };
-
 
 //**********************************
 namespace StringUtil {
@@ -341,48 +333,41 @@ template <typename T, std::enable_if_t<std::is_same_v<double, T>, bool> = true>
 void transform_value(std::string const& from, T& to) {
   try {
     to = std::stod(from, nullptr);
-  } catch (std::invalid_argument const &e) {
+  } catch (std::invalid_argument const& e) {
     throw invalid_argument(e.what());
   }
 }
 
 // std::string
-template <typename T, std::enable_if_t<std::is_same_v<std::string, T>, bool> = true>
+template <typename T,
+          std::enable_if_t<std::is_same_v<std::string, T>, bool> = true>
 void transform_value(std::string const& from, T& to) {
   to = from;
 }
 
-template<typename T, std::enable_if_t<is_list_split_by_v<T>, bool> = true>
-void transform_value(std::string const& from , T& to) {
-  to.split(from);
-}
-
-template<typename T, std::enable_if_t<is_pair_split_by_v<T>, bool> = true>
-void transform_value(std::string const& from , T& to) {
-  to.split(from);
-}
-
-template<typename T, std::enable_if_t<is_pair_v<T>, bool> = true>
-void transform_value(std::string const& from , T& to, char delimiter = '=') {
+template <typename T, std::enable_if_t<is_pair_v<T>, bool> = true>
+void transform_value(std::string const& from, T& to, char delimiter = '=') {
   auto index = from.find(delimiter);
   if (index != std::string::npos) {
     transform_value(from.substr(0, index), to.first);
-    transform_value(from.substr(index+1), to.second);
+    transform_value(from.substr(index + 1), to.second);
   }
 }
 
 // container
 template <typename T,
           std::enable_if_t<is_option_bindable_container_v<T>, bool> = true>
-void insert_or_replace_value(
-    T& bind_value,
-    std::string const& option_val, char delimiter = '=') {
+void insert_or_replace_value(T& bind_value,
+                             std::string const& option_val,
+                             char delimiter = '=') {
   if (option_val.empty()) {
     return;
   }
   std::insert_iterator<T> it(bind_value, bind_value.end());  // insert to end
   if constexpr (is_pair_v<typename T::value_type>) {
-    using writable_pair = typename std::pair<typename std::remove_const_t<typename T::value_type::first_type>, typename T::value_type::second_type>;
+    using writable_pair = typename std::pair<
+        typename std::remove_const_t<typename T::value_type::first_type>,
+        typename T::value_type::second_type>;
     writable_pair result;
     transform_value<writable_pair>(option_val, result, delimiter);
     *it = std::move(result);
@@ -396,9 +381,9 @@ void insert_or_replace_value(
 // non-container
 template <typename T,
           std::enable_if_t<!is_option_bindable_container_v<T>, bool> = false>
-void insert_or_replace_value(
-    T& bind_value,
-    std::string const& option_val, char delimiter = '=') {
+void insert_or_replace_value(T& bind_value,
+                             std::string const& option_val,
+                             char delimiter = '=') {
   if (option_val.empty()) {
     return;
   }
@@ -411,28 +396,6 @@ void insert_or_replace_value(
   bind_value = std::move(result);
 }
 }  // namespace
-
-template<typename T/* = std::string*/, char delim/* = ','*/>
-class list_split_by : public std::vector<T> {
- public:
-   void split(std::string const& from) {
-     auto ret = argparse::StringUtil::split(from, delim);
-     std::transform(begin(ret), end(ret), std::back_inserter(*this), [](std::string const& v) -> T { T ret{}; transform_value(v, ret); return ret;});
-   }
-};
-
-template<typename T/* = std::string*/, typename U/* = std::string*/, char delim>
-class pair_split_by : public std::pair<T, U> {
- public:
-   void split(std::string const& from) {
-     auto index = from.find(delim);
-     if (index != std::string::npos) {
-       transform_value(from.substr(0, index), this->first);
-       transform_value(from.substr(index+1), this->second);
-     }
-   }
-};
-
 
 class Base {
   template <typename T>
@@ -550,17 +513,9 @@ class Base {
   }
   std::vector<std::string> flag_and_option_names;
   std::string help_msg;
-  using type2 = std::variant<
-               std::reference_wrapper<list_split_by<>>,
-               list_split_by<>,
-               std::reference_wrapper<pair_split_by<>>,
-               pair_split_by<>,
-               std::reference_wrapper<std::vector<pair_split_by<>>>,
-               std::vector<pair_split_by<>>
-                   >;
-  using mytype = merge_variant<make_variant_type<bool, int, double, std::string>::type, type2>::type;
+  using value_type = make_variant_type<bool, int, double, std::string>::type;
 
-      mytype value;
+  value_type value;
   int hit_count{0};
 };
 class ArgParser;
@@ -737,21 +692,27 @@ class Flag : public Base {
   std::vector<std::string> negate_flag_names{};
 };
 
-class AliasFlag: public Flag {
-  friend  class ArgParser;
+class AliasFlag : public Flag {
+  friend class ArgParser;
+
  public:
   Base::Type type() const override { return Base::Type::ALIAS_FLAG; };
+
  protected:
-  std::unique_ptr<AliasFlag> static make_flag(std::string const& flag_desc, std::string const& option_name, std::string const& option_value) {
-    return std::unique_ptr<AliasFlag>(new AliasFlag(flag_desc, option_name, option_value));
+  std::unique_ptr<AliasFlag> static make_flag(std::string const& flag_desc,
+                                              std::string const& option_name,
+                                              std::string const& option_value) {
+    return std::unique_ptr<AliasFlag>(
+        new AliasFlag(flag_desc, option_name, option_value));
   }
-  explicit AliasFlag(std::string const& flag_desc, std::string const& option_name, std::string const& option_value):Flag(flag_desc, Base::identity<bool>{}),option_name(option_name), option_value(option_value){}
-  void hit(char const flag) override {
-    Flag::hit(flag);
-  }
-  void hit(std::string const& flag) override {
-    Flag::hit(flag);
-  }
+  explicit AliasFlag(std::string const& flag_desc,
+                     std::string const& option_name,
+                     std::string const& option_value)
+      : Flag(flag_desc, Base::identity<bool>{}),
+        option_name(option_name),
+        option_value(option_value) {}
+  void hit(char const flag) override { Flag::hit(flag); }
+  void hit(std::string const& flag) override { Flag::hit(flag); }
 
  private:
   std::string option_name;
@@ -760,6 +721,7 @@ class AliasFlag: public Flag {
 
 class Option : public Base {
   friend class ArgParser;
+
  public:
   Base::Type type() const override { return Base::Type::OPTION; };
 
@@ -828,9 +790,7 @@ class Option : public Base {
   void hit(std::string const&, std::string const& val) override {
     return hit_impl(val);
   }
-  void hit(char, std::string const& val) override {
-    return hit_impl(val);
-  }
+  void hit(char, std::string const& val) override { return hit_impl(val); }
   void hit(std::string const& flag) override { assert(false); }
   void hit(char const flag) override { assert(false); }
 
@@ -852,15 +812,15 @@ class Option : public Base {
   void hit_impl(std::string const& opt_val) {
     hit_count++;
     std::visit(
-        [&opt_val, this](auto &x) {
+        [&opt_val, this](auto& x) {
           using T = std::remove_reference_t<decltype(x)>;
           if constexpr (is_reference_wrapper_v<T>) {
             insert_or_replace_value(x.get(), opt_val, delimiter);
           } else {
             insert_or_replace_value(x, opt_val, delimiter);
           }
-        }
-        , value);
+        },
+        value);
   }
 
  private:
@@ -888,28 +848,24 @@ class Positional : public Base {
 
   void hit(char short_name) override { assert(false); };
   void hit(std::string const& long_name) override { assert(false); };
-  void hit(char short_name,
-                                  std::string const& val) override {
-    assert(false);
-  };
-  void hit(std::string const& long_name,
-                                  std::string const& val) override {
-    std::visit(
-        overloaded{[&val, this](auto& v) {
-          using type = std::remove_reference_t<decltype(v)>;
-          if constexpr (is_reference_wrapper_v<type>) {
-            insert_or_replace_value(v.get(), val, delimiter);
-            if constexpr (!is_option_bindable_container_v<typename type::type>) {
-              can_set_value = false;
-            }
-          } else {
-            insert_or_replace_value(v, val, delimiter);
-            if constexpr (!is_option_bindable_container_v<type>) {
-              can_set_value = false;
-            }
-          }
-        }},
-        value);
+  void hit(char short_name, std::string const& val) override { assert(false); };
+  void hit(std::string const& long_name, std::string const& val) override {
+    std::visit(overloaded{[&val, this](auto& v) {
+                 using type = std::remove_reference_t<decltype(v)>;
+                 if constexpr (is_reference_wrapper_v<type>) {
+                   insert_or_replace_value(v.get(), val, delimiter);
+                   if constexpr (!is_option_bindable_container_v<
+                                     typename type::type>) {
+                     can_set_value = false;
+                   }
+                 } else {
+                   insert_or_replace_value(v, val, delimiter);
+                   if constexpr (!is_option_bindable_container_v<type>) {
+                     can_set_value = false;
+                   }
+                 }
+               }},
+               value);
   };
 
   [[nodiscard]] std::string usage() const override { return ""; };
@@ -987,7 +943,9 @@ class ArgParser {
     all_options.push_back(std::move(x));
     return *p;
   }
-  AliasFlag& add_alias_flag(std::string const& flag_desc, std::string const& option_name, std::string const& option_value) {
+  AliasFlag& add_alias_flag(std::string const& flag_desc,
+                            std::string const& option_name,
+                            std::string const& option_value) {
     auto x = AliasFlag::make_flag(flag_desc, option_name, option_value);
     auto p = x.get();
     all_options.push_back(std::move(x));
@@ -995,7 +953,8 @@ class ArgParser {
   }
 
   template <typename T,
-            typename = std::enable_if_t<!is_need_split_v<T> && is_option_bindable_value_v<T>>>
+            typename = std::enable_if_t<!is_need_split_v<T> &&
+                                        is_option_bindable_value_v<T>>>
   Option& add_option(std::string const& option_desc, T& bind) {
     auto x = Option::make_option(option_desc, bind);
     auto p = x.get();
@@ -1004,7 +963,8 @@ class ArgParser {
   }
 
   template <typename T = std::string,
-            typename = std::enable_if_t<!is_need_split_v<T> && is_option_bindable_value_v<T>>>
+            typename = std::enable_if_t<!is_need_split_v<T> &&
+                                        is_option_bindable_value_v<T>>>
   Option& add_option(std::string const& option_desc) {
     auto x = Option::make_option<T>(option_desc);
     auto p = x.get();
@@ -1013,8 +973,11 @@ class ArgParser {
   }
 
   template <typename T,
-            typename = std::enable_if_t<is_need_split_v<T> && is_option_bindable_value_v<T>>>
-  Option& add_option(std::string const& option_desc, T& bind, char delimiter = default_delimiter_v<T>) {
+            typename = std::enable_if_t<is_need_split_v<T> &&
+                                        is_option_bindable_value_v<T>>>
+  Option& add_option(std::string const& option_desc,
+                     T& bind,
+                     char delimiter = default_delimiter_v<T>) {
     auto x = Option::make_option(option_desc, bind);
     auto p = x.get();
     all_options.push_back(std::move(x));
@@ -1023,8 +986,10 @@ class ArgParser {
   }
 
   template <typename T = std::string,
-            typename = std::enable_if_t<is_need_split_v<T> && is_option_bindable_value_v<T>>>
-  Option& add_option(std::string const& option_desc, char delimiter = default_delimiter_v<T>) {
+            typename = std::enable_if_t<is_need_split_v<T> &&
+                                        is_option_bindable_value_v<T>>>
+  Option& add_option(std::string const& option_desc,
+                     char delimiter = default_delimiter_v<T>) {
     auto x = Option::make_option<T>(option_desc);
     auto p = x.get();
     all_options.push_back(std::move(x));
@@ -1033,7 +998,8 @@ class ArgParser {
   }
 
   template <typename T,
-            typename = std::enable_if_t<!is_need_split_v<T> && is_position_bindable_value_v<T>>>
+            typename = std::enable_if_t<!is_need_split_v<T> &&
+                                        is_position_bindable_value_v<T>>>
   Positional& add_positional(std::string const& name, T& bind) {
     auto x = Positional::make_positional(name, bind);
     auto p = x.get();
@@ -1041,7 +1007,8 @@ class ArgParser {
     return *p;
   }
   template <typename T = std::vector<std::string>,
-            typename = std::enable_if_t<!is_need_split_v<T> && is_position_bindable_value_v<T>>>
+            typename = std::enable_if_t<!is_need_split_v<T> &&
+                                        is_position_bindable_value_v<T>>>
   Positional& add_positional(std::string const& name) {
     auto x = Positional::make_positional<T>(name);
     auto p = x.get();
@@ -1050,8 +1017,11 @@ class ArgParser {
   }
 
   template <typename T,
-            typename = std::enable_if_t<is_need_split_v<T> && is_position_bindable_value_v<T>>>
-  Positional& add_positional(std::string const& name, T& bind, char delimiter = default_delimiter_v<T>) {
+            typename = std::enable_if_t<is_need_split_v<T> &&
+                                        is_position_bindable_value_v<T>>>
+  Positional& add_positional(std::string const& name,
+                             T& bind,
+                             char delimiter = default_delimiter_v<T>) {
     auto x = Positional::make_positional(name, bind);
     auto p = x.get();
     all_options.push_back(std::move(x));
@@ -1059,8 +1029,10 @@ class ArgParser {
     return *p;
   }
   template <typename T = std::vector<std::string>,
-            typename = std::enable_if_t<is_need_split_v<T> && is_position_bindable_value_v<T>>>
-  Positional& add_positional(std::string const& name, char delimiter = default_delimiter_v<T>) {
+            typename = std::enable_if_t<is_need_split_v<T> &&
+                                        is_position_bindable_value_v<T>>>
+  Positional& add_positional(std::string const& name,
+                             char delimiter = default_delimiter_v<T>) {
     auto x = Positional::make_positional<T>(name);
     auto p = x.get();
     all_options.push_back(std::move(x));
@@ -1149,8 +1121,10 @@ class ArgParser {
             (*short_flag)->hit(*short_p);
             if ((*short_flag)->is_alias_flag()) {
               auto* alis_flag = dynamic_cast<AliasFlag*>(*short_flag);
-              if (auto option = get_option(alis_flag->option_name); option.has_value()) {
-                option.value()->hit(alis_flag->option_name, alis_flag->option_value);
+              if (auto option = get_option(alis_flag->option_name);
+                  option.has_value()) {
+                option.value()->hit(alis_flag->option_name,
+                                    alis_flag->option_value);
               } else {
                 assert(false);
               }
@@ -1159,9 +1133,8 @@ class ArgParser {
           } else if (auto short_option = get_option(*short_p);
                      short_option.has_value()) {
             if (short_p + 1 != curr_arg.end()) {
-                      (*short_option)
-                          ->hit(*short_p,
-                                std::string(short_p + 1, curr_arg.end()));
+              (*short_option)
+                  ->hit(*short_p, std::string(short_p + 1, curr_arg.end()));
               short_p = curr_arg.end();
             } else {
               if (next == command_line_args.end()) {
@@ -1174,7 +1147,7 @@ class ArgParser {
                   ss << "option requires an argument -- -" << *short_p;
                   return {1, ss.str()};
                 } else {
-                          (*short_option)->hit(*short_p, *next);
+                  (*short_option)->hit(*short_p, *next);
                   short_p = curr_arg.end();
                   next = std::next(next);
                 }
@@ -1196,7 +1169,7 @@ class ArgParser {
         if (auto i = curr_arg.find('=', 2); i != std::string::npos) {
           std::string option = curr_arg.substr(2, i - 2);
           if (auto long_opt = get_option(option); long_opt.has_value()) {
-                    (*long_opt)->hit(option, curr_arg.substr(i + 1));
+            (*long_opt)->hit(option, curr_arg.substr(i + 1));
           } else {
             std::stringstream ss;
             ss << "invalid option -- --" << option;

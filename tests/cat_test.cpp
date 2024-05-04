@@ -1,6 +1,6 @@
 
-#include <argparse.hpp>
 #include <gtest/gtest.h>
+#include <argparse.hpp>
 
 /* ****************************************************************************
  * NAME
@@ -126,10 +126,10 @@ TEST(Cat, help) {
   EXPECT_FALSE(cat_flags.version);
   EXPECT_TRUE(cat_flags.files.empty());
 
-
   using namespace std::literals::string_literals;
   EXPECT_EQ(cat_flags.show_all, parser.flag("show-all").as<bool>());
-  EXPECT_EQ(cat_flags.number_nonblank, parser.flag("number-nonblank").as<bool>());
+  EXPECT_EQ(cat_flags.number_nonblank,
+            parser.flag("number-nonblank").as<bool>());
   EXPECT_EQ(cat_flags.e, parser.flag("e").as<bool>());
   EXPECT_EQ(cat_flags.show_ends, parser.flag("show-ends").as<bool>());
   EXPECT_EQ(cat_flags.number, parser.flag("number").as<bool>());
@@ -137,7 +137,8 @@ TEST(Cat, help) {
   EXPECT_EQ(cat_flags.t, parser.flag("t").as<bool>());
   EXPECT_EQ(cat_flags.show_tabs, parser.flag("show-tabs").as<bool>());
   EXPECT_EQ(cat_flags.u, parser.flag("u").as<bool>());
-  EXPECT_EQ(cat_flags.show_nonprinting, parser.flag("show-nonprinting").as<bool>());
+  EXPECT_EQ(cat_flags.show_nonprinting,
+            parser.flag("show-nonprinting").as<bool>());
   EXPECT_EQ(cat_flags.help, parser.flag("help").as<bool>());
   EXPECT_EQ(cat_flags.version, parser.flag("version").as<bool>());
 }
@@ -168,7 +169,8 @@ TEST(Cat, version) {
 
   using namespace std::literals::string_literals;
   EXPECT_EQ(cat_flags.show_all, parser.flag("show-all").as<bool>());
-  EXPECT_EQ(cat_flags.number_nonblank, parser.flag("number-nonblank").as<bool>());
+  EXPECT_EQ(cat_flags.number_nonblank,
+            parser.flag("number-nonblank").as<bool>());
   EXPECT_EQ(cat_flags.e, parser.flag("e").as<bool>());
   EXPECT_EQ(cat_flags.show_ends, parser.flag("show-ends").as<bool>());
   EXPECT_EQ(cat_flags.number, parser.flag("number").as<bool>());
@@ -176,7 +178,8 @@ TEST(Cat, version) {
   EXPECT_EQ(cat_flags.t, parser.flag("t").as<bool>());
   EXPECT_EQ(cat_flags.show_tabs, parser.flag("show-tabs").as<bool>());
   EXPECT_EQ(cat_flags.u, parser.flag("u").as<bool>());
-  EXPECT_EQ(cat_flags.show_nonprinting, parser.flag("show-nonprinting").as<bool>());
+  EXPECT_EQ(cat_flags.show_nonprinting,
+            parser.flag("show-nonprinting").as<bool>());
   EXPECT_EQ(cat_flags.help, parser.flag("help").as<bool>());
   EXPECT_EQ(cat_flags.version, parser.flag("version").as<bool>());
 }
