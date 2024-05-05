@@ -21,10 +21,10 @@ TEST(OptBase, Flag_setDefaul) {
 
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
   ASSERT_FALSE(bool_flag.as<bool>());
-  ASSERT_EQ(3, int_flag.as<int>());
+  ASSERT_EQ(4, int_flag.as<int>());
 
   ASSERT_FALSE(parser["i"].as<bool>());
-  ASSERT_EQ(parser["v"].as<int>(), 3);
+  ASSERT_EQ(parser["v"].as<int>(), 4);
 }
 
 TEST(OptBase, Option_SetDefault) {
@@ -94,7 +94,7 @@ TEST(OptBase, Option_SetDefault) {
   ASSERT_EQ((map_str_int_opt.as<std::map<std::string, int>>().at("e2")), 2);
   ASSERT_EQ((map_str_int_opt.as<std::map<std::string, int>>().at("e3")), 3);
   ASSERT_EQ((map_str_int_opt.as<std::map<std::string, int>>().at("e4")), 4);
-  ASSERT_EQ((map_str_int_opt.as<std::map<std::string, int>>().size()), 5);
+  ASSERT_EQ((map_str_int_opt.as<std::map<std::string, int>>().size()), 7);
 }
 
 TEST(OptBase, Positional_SetDefault) {
@@ -141,11 +141,11 @@ TEST(OptBase, Positional_SetDefault) {
 
   ASSERT_EQ((str_int_positional.as<std::vector<std::pair<std::string, int>>>()
                  .size()),
-            5);
+            9);
 
-  ASSERT_EQ(positionals[0], (std::pair<std::string, int>{"192.168.0.0", 1110}));
-  ASSERT_EQ(positionals[1], (std::pair<std::string, int>{"192.168.0.1", 1111}));
-  ASSERT_EQ(positionals[2], (std::pair<std::string, int>{"192.168.0.2", 1112}));
-  ASSERT_EQ(positionals[3], (std::pair<std::string, int>{"192.168.0.3", 1113}));
-  ASSERT_EQ(positionals[4], (std::pair<std::string, int>{"192.168.0.4", 1114}));
+  ASSERT_EQ(positionals[4], (std::pair<std::string, int>{"192.168.0.0", 1110}));
+  ASSERT_EQ(positionals[5], (std::pair<std::string, int>{"192.168.0.1", 1111}));
+  ASSERT_EQ(positionals[6], (std::pair<std::string, int>{"192.168.0.2", 1112}));
+  ASSERT_EQ(positionals[7], (std::pair<std::string, int>{"192.168.0.3", 1113}));
+  ASSERT_EQ(positionals[8], (std::pair<std::string, int>{"192.168.0.4", 1114}));
 }
