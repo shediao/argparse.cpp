@@ -460,15 +460,15 @@ void insert_or_replace_value(T& bind_value,
   bind_value = std::move(result);
 }
 
-class Base {
+class OptBase {
   friend class ArgParser;
 
  protected:
   enum class Type { FLAG, ALIAS_FLAG, OPTION, POSITIONAL };
 
  public:
-  virtual ~Base() = default;
-  Base::Type virtual type() const = 0;
+  virtual ~OptBase() = default;
+  OptBase::Type virtual type() const = 0;
   bool is_flag() const {
     return Type::FLAG == this->type() || is_alias_flag();
   };
@@ -484,13 +484,14 @@ class Base {
       }
       return std::get<T>(value);
     } catch (std::bad_variant_access const& e) {
-      throw bad_value_access(std::string(e.what()) + ": " + value_type_name() +
-                             " => " + bindable_type_info<T>::name());
+      throw bad_value_access(std::string(e.what()) +
+                             " as: " + value_type_name() + " => " +
+                             bindable_type_info<T>::name());
     }
   }
 
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
-  Base& bind(T& bind_val) {
+  OptBase& bind(T& bind_val) {
     if (is_flag()) {
       if constexpr (is_flag_bindable_value_v<T>) {
         value = std::ref(bind_val);
@@ -516,51 +517,30 @@ class Base {
     return *this;
   }
 
-  Base& help(std::string const& help) {
+  OptBase& help(std::string const& help) {
     help_msg = help;
     return *this;
   }
-  Base& value_help(std::string const& helper) {
+  OptBase& value_help(std::string const& helper) {
     this->value_placeholder = helper;
     return *this;
   }
 
   // for const char*
-  Base& set_default(std::string const& def_val) {
+  OptBase& set_default(std::string const& def_val) {
     return set_default<std::string>(def_val);
   }
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
-  Base& set_default(T const& def_val) {
-    std::visit(
-        [this, &def_val](auto& val) {
-          using type = std::remove_reference_t<decltype(val)>;
-          if constexpr (is_reference_wrapper_v<type>) {
-            if constexpr (std::is_assignable_v<decltype(val.get()),
-                                               decltype(def_val)>) {
-              val.get() = def_val;
-            } else {
-              throw bad_value_access(std::string("err: ") + value_type_name() +
-                                     " <= " + bindable_type_info<T>::name());
-            }
-          } else {
-            if constexpr (std::is_assignable_v<decltype(val),
-                                               decltype(def_val)>) {
-              val = def_val;
-            } else {
-              throw bad_value_access(std::string("err: ") + value_type_name() +
-                                     " <= " + bindable_type_info<T>::name());
-            }
-          }
-        },
-        value);
-    return *this;
+  OptBase& set_default(T const& def_val) {
+    current_is_default_value = true;
+    return set_init_value(def_val);
   }
 
   [[nodiscard]] int count() const { return hit_count; }
-  Base(Base const&) = delete;
-  Base(Base&&) = delete;
-  Base& operator=(Base const&) = delete;
-  Base& operator=(Base&&) = delete;
+  OptBase(OptBase const&) = delete;
+  OptBase(OptBase&&) = delete;
+  OptBase& operator=(OptBase const&) = delete;
+  OptBase& operator=(OptBase&&) = delete;
 
  protected:
   using value_type = make_variant_type<bool, int, double, std::string>::type;
@@ -570,10 +550,10 @@ class Base {
   };
 
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
-  Base(identity<T> /*unused*/, T& bind) : value(std::ref(bind)) {}
+  OptBase(identity<T> /*unused*/, T& bind) : value(std::ref(bind)) {}
 
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
-  explicit Base(identity<T> /*unused*/) : value(T{}) {}
+  explicit OptBase(identity<T> /*unused*/) : value(T{}) {}
 
   virtual void hit(char short_name) = 0;
   virtual void hit(std::string const& long_name) = 0;
@@ -591,6 +571,31 @@ class Base {
   }
   std::vector<std::string> const& option_names() const {
     return flag_and_option_names;
+  }
+
+  template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
+  OptBase& set_init_value(T const& init_val) {
+    std::visit(
+        [this, &init_val](auto& val) {
+          using type = std::remove_reference_t<decltype(val)>;
+          if constexpr (is_reference_wrapper_v<type>) {
+            if constexpr (std::is_same_v<typename type::type, T>) {
+              val.get() = init_val;
+            } else {
+              throw bad_value_access(std::string("err: ") + value_type_name() +
+                                     " <= " + bindable_type_info<T>::name());
+            }
+          } else {
+            if constexpr (std::is_same_v<type, T>) {
+              val = init_val;
+            } else {
+              throw bad_value_access(std::string("err: ") + value_type_name() +
+                                     " <= " + bindable_type_info<T>::name());
+            }
+          }
+        },
+        value);
+    return *this;
   }
 
   std::string value_type_name() const {
@@ -614,14 +619,15 @@ class Base {
   std::string help_msg;
   std::string value_placeholder;
   value_type value;
+  bool current_is_default_value{false};
   int hit_count{0};
 };
 class ArgParser;
-class Flag : public Base {
+class Flag : public OptBase {
   friend class ArgParser;
 
  public:
-  Base::Type type() const override { return Base::Type::FLAG; };
+  OptBase::Type type() const override { return OptBase::Type::FLAG; };
 
  protected:
   template <typename T,
@@ -634,19 +640,19 @@ class Flag : public Base {
   template <typename T,
             typename = std::enable_if_t<is_flag_bindable_value_v<T>>>
   std::unique_ptr<Flag> static make_flag(std::string const& flag_desc) {
-    return std::unique_ptr<Flag>(new Flag(flag_desc, Base::identity<T>{}));
+    return std::unique_ptr<Flag>(new Flag(flag_desc, OptBase::identity<T>{}));
   }
 
   template <typename T,
             typename = std::enable_if_t<is_flag_bindable_value_v<T>>>
   Flag(std::string const& flag_desc, T& bind)
-      : Base(typename Base::identity<T>{}, bind) {
+      : OptBase(typename OptBase::identity<T>{}, bind) {
     Flag_init(flag_desc);
   }
   template <typename T,
             typename = std::enable_if_t<is_flag_bindable_value_v<T>>>
-  Flag(std::string const& flag_desc, Base::identity<T> /*unused*/)
-      : Base(typename Base::identity<T>{}) {
+  Flag(std::string const& flag_desc, OptBase::identity<T> /*unused*/)
+      : OptBase(typename OptBase::identity<T>{}) {
     Flag_init(flag_desc);
   }
   [[nodiscard]] bool negate_contains(std::string const& flag) const {
@@ -655,7 +661,7 @@ class Flag : public Base {
   }
 
   [[nodiscard]] bool contains(std::string const& flag) const override {
-    return Base::contains(flag) || negate_contains(flag);
+    return OptBase::contains(flag) || negate_contains(flag);
   }
 
   void hit(char const flag) override { hit(std::string(1, flag)); }
@@ -740,7 +746,7 @@ class Flag : public Base {
             [this, &flag](bool& val) {
               if (negate_contains(flag)) {
                 val = false;
-              } else if (Base::contains(flag)) {
+              } else if (OptBase::contains(flag)) {
                 val = true;
               } else {
                 UNREACHABLE();
@@ -749,7 +755,7 @@ class Flag : public Base {
             [this, &flag](std::reference_wrapper<bool>& val) {
               if (negate_contains(flag)) {
                 val.get() = false;
-              } else if (Base::contains(flag)) {
+              } else if (OptBase::contains(flag)) {
                 val.get() = true;
               } else {
                 UNREACHABLE();
@@ -759,9 +765,12 @@ class Flag : public Base {
               using type = std::remove_reference_t<decltype(val)>;
               if constexpr (is_reference_wrapper_v<type>) {
                 if constexpr (is_flag_bindable_value_v<typename type::type>) {
+                  if (current_is_default_value) {
+                    val.get() = 0;
+                  }
                   if (negate_contains(flag)) {
                     val.get() -= 1;
-                  } else if (Base::contains(flag)) {
+                  } else if (OptBase::contains(flag)) {
                     val.get() += 1;
                   } else {
                     UNREACHABLE();
@@ -771,9 +780,12 @@ class Flag : public Base {
                 }
               } else {
                 if constexpr (is_flag_bindable_value_v<type>) {
+                  if (current_is_default_value) {
+                    val = 0;
+                  }
                   if (negate_contains(flag)) {
                     val -= 1;
-                  } else if (Base::contains(flag)) {
+                  } else if (OptBase::contains(flag)) {
                     val += 1;
                   } else {
                     UNREACHABLE();
@@ -784,6 +796,7 @@ class Flag : public Base {
               }
             }},
         value);
+    current_is_default_value = false;
   }
 
   std::vector<std::string> negate_flag_names{};
@@ -793,7 +806,7 @@ class AliasFlag : public Flag {
   friend class ArgParser;
 
  public:
-  Base::Type type() const override { return Base::Type::ALIAS_FLAG; };
+  OptBase::Type type() const override { return OptBase::Type::ALIAS_FLAG; };
 
  protected:
   std::unique_ptr<AliasFlag> static make_flag(
@@ -804,7 +817,7 @@ class AliasFlag : public Flag {
   }
   explicit AliasFlag(std::string const& flag_desc,
                      std::pair<std::string, std::string> option)
-      : Flag(flag_desc, Base::identity<bool>{}),
+      : Flag(flag_desc, OptBase::identity<bool>{}),
         option_name(std::move(std::move(option).first)),
         option_value(std::move(std::move(option).second)) {}
   void hit(char const flag) override { Flag::hit(flag); }
@@ -815,11 +828,11 @@ class AliasFlag : public Flag {
   std::string option_value;
 };
 
-class Option : public Base {
+class Option : public OptBase {
   friend class ArgParser;
 
  public:
-  Base::Type type() const override { return Base::Type::OPTION; };
+  OptBase::Type type() const override { return OptBase::Type::OPTION; };
 
  protected:
   template <typename T,
@@ -833,19 +846,19 @@ class Option : public Base {
             typename = std::enable_if_t<is_option_bindable_value_v<T>>>
   std::unique_ptr<Option> static make_option(std::string const& option_desc) {
     return std::unique_ptr<Option>(
-        new Option(option_desc, Base::identity<T>{}));
+        new Option(option_desc, OptBase::identity<T>{}));
   }
 
   template <typename T,
             typename = std::enable_if_t<is_option_bindable_value_v<T>>>
   Option(std::string const& option_desc, T& bind)
-      : Base(typename Base::identity<T>{}, bind) {
+      : OptBase(typename OptBase::identity<T>{}, bind) {
     Option_init(option_desc);
   }
   template <typename T,
             typename = std::enable_if_t<is_option_bindable_value_v<T>>>
-  Option(std::string const& option_desc, Base::identity<T> /*unused*/)
-      : Base(typename Base::identity<T>{}) {
+  Option(std::string const& option_desc, OptBase::identity<T> /*unused*/)
+      : OptBase(typename OptBase::identity<T>{}) {
     Option_init(option_desc);
   }
   [[nodiscard]] std::string usage() const override {
@@ -918,22 +931,33 @@ class Option : public Base {
         [&opt_val, this](auto& x) {
           using T = std::remove_reference_t<decltype(x)>;
           if constexpr (is_reference_wrapper_v<T>) {
+            if constexpr (is_option_bindable_container_v<typename T::type>) {
+              if (current_is_default_value) {
+                x.get().clear();
+              }
+            }
             insert_or_replace_value(x.get(), opt_val, delimiter);
           } else {
+            if constexpr (is_option_bindable_container_v<T>) {
+              if (current_is_default_value) {
+                x.clear();
+              }
+            }
             insert_or_replace_value(x, opt_val, delimiter);
           }
         },
         value);
+    current_is_default_value = false;
   }
 
   char delimiter{'\0'};
 };
 
-class Positional : public Base {
+class Positional : public OptBase {
   friend class ArgParser;
 
  public:
-  Base::Type type() const override { return Base::Type::POSITIONAL; };
+  OptBase::Type type() const override { return OptBase::Type::POSITIONAL; };
 
  protected:
   template <typename T>
@@ -944,7 +968,7 @@ class Positional : public Base {
   template <typename T>
   static std::unique_ptr<Positional> make_positional(std::string const& name) {
     return std::unique_ptr<Positional>(
-        new Positional(name, Base::identity<T>{}));
+        new Positional(name, OptBase::identity<T>{}));
   }
 
   void hit(char /*short_name*/) override { UNREACHABLE(); };
@@ -953,22 +977,34 @@ class Positional : public Base {
     UNREACHABLE();
   };
   void hit(std::string const& long_name, std::string const& val) override {
-    std::visit(overloaded{[&val, this](auto& v) {
-                 using type = std::remove_reference_t<decltype(v)>;
-                 if constexpr (is_reference_wrapper_v<type>) {
-                   insert_or_replace_value(v.get(), val, delimiter);
-                   if constexpr (!is_option_bindable_container_v<
-                                     typename type::type>) {
-                     can_set_value = false;
-                   }
-                 } else {
-                   insert_or_replace_value(v, val, delimiter);
-                   if constexpr (!is_option_bindable_container_v<type>) {
-                     can_set_value = false;
-                   }
-                 }
-               }},
-               value);
+    std::visit(
+        overloaded{[&val, this](auto& v) {
+          using type = std::remove_reference_t<decltype(v)>;
+          if constexpr (is_reference_wrapper_v<type>) {
+            if constexpr (is_option_bindable_container_v<typename type::type>) {
+              if (current_is_default_value) {
+                v.get().clear();
+              }
+            }
+            insert_or_replace_value(v.get(), val, delimiter);
+            if constexpr (!is_option_bindable_container_v<
+                              typename type::type>) {
+              can_set_value = false;
+            }
+          } else {
+            if constexpr (is_option_bindable_container_v<type>) {
+              if (current_is_default_value) {
+                v.clear();
+              }
+            }
+            insert_or_replace_value(v, val, delimiter);
+            if constexpr (!is_option_bindable_container_v<type>) {
+              can_set_value = false;
+            }
+          }
+        }},
+        value);
+    current_is_default_value = false;
   };
 
   [[nodiscard]] std::string usage() const override { return ""; };
@@ -976,13 +1012,13 @@ class Positional : public Base {
 
   template <typename T>
   Positional(std::string const& name, T& bind)
-      : Base(Base::identity<T>{}, bind) {
+      : OptBase(OptBase::identity<T>{}, bind) {
     add_option_name(name);
   }
 
   template <typename T>
-  Positional(std::string const& name, Base::identity<T>)
-      : Base(Base::identity<T>{}) {
+  Positional(std::string const& name, OptBase::identity<T>)
+      : OptBase(OptBase::identity<T>{}) {
     add_option_name(name);
   }
   bool can_set_value{true};
@@ -1004,6 +1040,7 @@ class ArgParser {
   Flag& add_flag(std::string const& flag_desc, T& bind) {
     auto x = Flag::make_flag(flag_desc, bind);
     auto p = x.get();
+    // TODO(shediao): check flag already exists
     all_options.push_back(std::move(x));
     return *p;
   }
@@ -1013,6 +1050,7 @@ class ArgParser {
   Flag& add_flag(std::string const& flag_desc) {
     auto x = Flag::make_flag<T>(flag_desc);
     auto p = x.get();
+    // TODO(shediao): check flag already exists
     all_options.push_back(std::move(x));
     return *p;
   }
@@ -1021,6 +1059,7 @@ class ArgParser {
       std::pair<std::string, std::string> option_key_value) {
     auto x = AliasFlag::make_flag(flag_desc, std::move(option_key_value));
     auto* p = x.get();
+    // TODO(shediao): check flag already exists
     all_options.push_back(std::move(x));
     return *p;
   }
@@ -1031,6 +1070,7 @@ class ArgParser {
   Option& add_option(std::string const& option_desc, T& bind) {
     auto x = Option::make_option(option_desc, bind);
     auto p = x.get();
+    // TODO(shediao): check option already exists
     all_options.push_back(std::move(x));
     return *p;
   }
@@ -1041,6 +1081,7 @@ class ArgParser {
   Option& add_option(std::string const& option_desc) {
     auto x = Option::make_option<T>(option_desc);
     auto p = x.get();
+    // TODO(shediao): check option already exists
     all_options.push_back(std::move(x));
     return *p;
   }
@@ -1065,6 +1106,7 @@ class ArgParser {
                      char delimiter = default_delimiter_v<T>) {
     auto x = Option::make_option<T>(option_desc);
     auto p = x.get();
+    // TODO(shediao): check option already exists
     all_options.push_back(std::move(x));
     p->delimiter = delimiter;
     return *p;
@@ -1076,6 +1118,7 @@ class ArgParser {
   Positional& add_positional(std::string const& name, T& bind) {
     auto x = Positional::make_positional(name, bind);
     auto p = x.get();
+    // TODO(shediao): check positional already exists
     all_options.push_back(std::move(x));
     return *p;
   }
@@ -1085,6 +1128,7 @@ class ArgParser {
   Positional& add_positional(std::string const& name) {
     auto x = Positional::make_positional<T>(name);
     auto p = x.get();
+    // TODO(shediao): check positional already exists
     all_options.push_back(std::move(x));
     return *p;
   }
@@ -1134,7 +1178,7 @@ class ArgParser {
     unknown_option_as_start_of_positionals = true;
   }
 
-  std::pair<int, std::string> parse(int argc, const char** argv) {
+  std::pair<int, std::string> parse(int argc, const char* const* argv) {
     std::vector<std::string> command_line_args{argv, argv + argc};
 
     if (command_line_args.empty()) {
@@ -1157,12 +1201,6 @@ class ArgParser {
                 [](auto& o) { return o->is_positional(); });
 
     while (current != command_line_args.end()) {
-      // position args
-      // 1. -
-      // 2. ---
-      // 3. ""
-      // 4. xxxx
-
       auto next = std::next(current);
 
       auto const& curr_arg = *current;
@@ -1297,7 +1335,7 @@ class ArgParser {
     return {0, ""};
   }
 
-  std::optional<Base*> get(std::string const& f) {
+  std::optional<OptBase*> get(std::string const& f) {
     auto it = find_if(begin(all_options), end(all_options),
                       [&f](auto const& f1) { return f1->contains(f); });
     if (it != end(all_options)) {
@@ -1306,7 +1344,7 @@ class ArgParser {
     return std::nullopt;
   }
 
-  Base& operator[](std::string const& f) {
+  OptBase& operator[](std::string const& f) {
     auto x = get(f);
     if (x.has_value()) {
       return *(x.value());
@@ -1344,7 +1382,7 @@ class ArgParser {
   std::string program_name{};
   bool unknown_option_as_start_of_positionals{false};
 
-  std::vector<std::unique_ptr<Base>> all_options{};
+  std::vector<std::unique_ptr<OptBase>> all_options{};
 };
 
 }  // namespace argparse
