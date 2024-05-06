@@ -102,7 +102,7 @@ TEST(getopt, parse) {
       "getopt", "-q", "-o", "hdrv", "-l", "help,debug,release,version",
       "--",     "-a", "-b", "-c",   "-d", "-e"};
 
-  parser.parse(cmd.size(), cmd.data());
+  ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
   ASSERT_TRUE(parser["quiet"].as<bool>());
   ASSERT_EQ("hdrv", parser["options"].as<std::string>());

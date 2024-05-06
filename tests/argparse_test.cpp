@@ -9,7 +9,7 @@ TEST(Base, count0) {
   ASSERT_EQ(0, parser["d"].count());
 
   std::vector<const char*> cmd{"argparser", "-d", "--debug"};
-  parser.parse(cmd.size(), cmd.data());
+  ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
   ASSERT_TRUE(is_debug);
   ASSERT_EQ(2, parser["d"].count());
@@ -27,7 +27,7 @@ TEST(Base, count1) {
 
   std::vector<const char*> cmd{"argparser", "-d",        "--debug",
                                "-r",        "--release", "-d"};
-  parser.parse(cmd.size(), cmd.data());
+  ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
   ASSERT_TRUE(is_debug);
   ASSERT_EQ(5, parser["d"].count());
@@ -75,9 +75,7 @@ TEST(Base, as1) {
 
   std::vector<const char*> cmd{"argparser", "-i",    "file1",
                                "--input",   "file2", "-v"};
-  auto [ret, err] = parser.parse(cmd.size(), cmd.data());
-  ASSERT_EQ(ret, 0);
-  ASSERT_EQ("", err);
+  ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
   ASSERT_FALSE(parser["input"].as<std::vector<std::string>>().empty());
   auto& inputs = parser["input"].as<std::vector<std::string>>();
@@ -171,7 +169,7 @@ TEST(Base, bind) {
 
   std::vector<const char*> cmd{
       "test", "-l5", "--name=shediao.xsd", "dir1", "file1", "file2", "file3"};
-  parser.parse(cmd.size(), cmd.data());
+  ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
   ASSERT_EQ(help, parser["help"].as<bool>());
   ASSERT_EQ(level, parser["level"].as<int>());
@@ -193,23 +191,17 @@ TEST(Base, bind) {
 TEST(ArgParser, parse0) {
   argparse::ArgParser parser1;
   std::vector<const char*> cmd{"test0"};
-  auto [code, msg] = parser1.parse(cmd.size(), cmd.data());
-  EXPECT_EQ(code, 0);
-  EXPECT_TRUE(msg.empty());
+  ASSERT_NO_THROW(parser1.parse(cmd.size(), cmd.data()));
 }
 TEST(ArgParser, parse0_1) {
   argparse::ArgParser parser1;
   std::vector<const char*> cmd{"test0", "-f"};
-  auto [code, msg] = parser1.parse(cmd.size(), cmd.data());
-  EXPECT_EQ(code, 1);
-  EXPECT_EQ("invalid option -- -f", msg);
+  ASSERT_ANY_THROW(parser1.parse(cmd.size(), cmd.data()));
 }
 TEST(ArgParser, parse0_2) {
   argparse::ArgParser parser1;
   std::vector<const char*> cmd{"test0", "--"};
-  auto [code, msg] = parser1.parse(cmd.size(), cmd.data());
-  EXPECT_EQ(code, 0);
-  EXPECT_TRUE(msg.empty());
+  ASSERT_NO_THROW(parser1.parse(cmd.size(), cmd.data()));
 }
 
 TEST(ArgParser, parser0_3) {
@@ -258,8 +250,7 @@ TEST(ArgParser, parser0_3) {
                                 "-e",
                                 "e2=v2",
                                 "-vvvv"};
-  auto [code, error_msg] = parser.parse(cmd2.size(), cmd2.data());
-  ASSERT_EQ(code, 0);
+  ASSERT_NO_THROW(parser.parse(cmd2.size(), cmd2.data()));
   EXPECT_EQ(flag_a, false);
   EXPECT_EQ(flag_b, true);
   EXPECT_EQ(flag_c, false);
@@ -307,8 +298,7 @@ TEST(ArgParser, negate) {
   bool is_release{true};
   parser.add_flag("-r,--release,!-d,!--debug", is_release);
   std::vector<const char*> cmd{"test0", "--debug", "--release", "-d"};
-  auto [code, msg] = parser.parse(cmd.size(), cmd.data());
-  EXPECT_EQ(code, 0) << msg;
+  ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
   EXPECT_FALSE(is_release);
 }

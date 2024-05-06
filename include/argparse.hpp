@@ -1,4 +1,3 @@
-
 #ifndef ARGPARSE_CPP_H_
 #define ARGPARSE_CPP_H_
 
@@ -139,13 +138,11 @@ struct is_transformable_type<
 template <typename T, typename U>
 struct is_transformable_type<
     std::pair<T, U>,
-    std::enable_if_t<(
-        std::is_same_v<bool, T> || std::is_same_v<int, T> ||
-        std::is_same_v<double, T> ||
-        std::is_same_v<std::string, T>)&&(std::is_same_v<bool, U> ||
-                                          std::is_same_v<int, U> ||
-                                          std::is_same_v<double, U> ||
-                                          std::is_same_v<std::string, U>)>>
+    std::enable_if_t<
+        (std::is_same_v<bool, T> || std::is_same_v<int, T> ||
+         std::is_same_v<double, T> || std::is_same_v<std::string, T>) &&
+        (std::is_same_v<bool, U> || std::is_same_v<int, U> ||
+         std::is_same_v<double, U> || std::is_same_v<std::string, U>)>>
     : std::true_type {};
 
 template <typename T>
@@ -1178,11 +1175,11 @@ class ArgParser {
     unknown_option_as_start_of_positionals = true;
   }
 
-  std::pair<int, std::string> parse(int argc, const char* const* argv) {
+  void parse(int argc, const char* const* argv) {
     std::vector<std::string> command_line_args{argv, argv + argc};
 
     if (command_line_args.empty()) {
-      return {0, ""};
+      return;
     }
 
     auto current = command_line_args.begin();
@@ -1190,7 +1187,9 @@ class ArgParser {
     if (auto& first = *command_line_args.begin();
         !first.empty() && first[0] != '-') {
       if (program_name.empty()) {
-        program_name = first;
+        auto it = std::find_if(rbegin(first), rend(first),
+                               [](char c) { return c == '/' || c == '\\'; });
+        program_name = std::string(it.base(), first.end());
       }
       // 0 ==> skip program file path
       current = std::next(command_line_args.begin());
@@ -1214,9 +1213,7 @@ class ArgParser {
                       [](auto& o) { return o->is_positional(); });
         }
         if (current_position_it == all_options.end()) {
-          std::stringstream ss;
-          ss << "invalid option -- -" << curr_arg;
-          return {1, ss.str()};
+          throw invalid_argument("invalid option: -" + curr_arg);
         }
         (*current_position_it)->hit("", curr_arg);
         current = next;
@@ -1251,14 +1248,12 @@ class ArgParser {
               short_p = curr_arg.end();
             } else {
               if (next == command_line_args.end()) {
-                std::stringstream ss;
-                ss << "option requires an argument -- -" << *short_p;
-                return {1, ss.str()};
+                throw invalid_argument("option requires an argument: -" +
+                                       std::string(1, *short_p));
               }
               if ((!next->empty() && (*next)[0] == '-')) {
-                std::stringstream ss;
-                ss << "option requires an argument -- -" << *short_p;
-                return {1, ss.str()};
+                throw invalid_argument("option requires an argument: -" +
+                                       std::string(1, *short_p));
               }
               (*short_option)->hit(*short_p, *next);
               short_p = curr_arg.end();
@@ -1268,9 +1263,8 @@ class ArgParser {
             if (unknown_option_as_start_of_positionals) {
               break;
             }
-            std::stringstream ss;
-            ss << "invalid option -- -" << *short_p;
-            return {1, ss.str()};
+            throw invalid_argument("invalid option: -" +
+                                   std::string(1, *short_p));
           }
         }
         current = next;
@@ -1281,9 +1275,7 @@ class ArgParser {
           if (auto long_opt = get_option(option); long_opt.has_value()) {
             (*long_opt)->hit(option, curr_arg.substr(i + 1));
           } else {
-            std::stringstream ss;
-            ss << "invalid option -- --" << option;
-            return {1, ss.str()};
+            throw invalid_argument("invalid option: --" + option);
           }
         } else {
           std::string const option = curr_arg.substr(2);
@@ -1291,14 +1283,12 @@ class ArgParser {
             (*long_flag)->hit(option);
           } else if (auto long_opt = get_option(option); long_opt.has_value()) {
             if (std::next(current) == command_line_args.end()) {
-              std::stringstream ss;
-              ss << "option requires an argument -- --" << option;
-              return {1, ss.str()};
+              throw invalid_argument("option requires an argument: --" +
+                                     option);
             }
             if (!next->empty() && (*next)[0] == '-') {
-              std::stringstream ss;
-              ss << "option requires an argument -- --" << option;
-              return {1, ss.str()};
+              throw invalid_argument("option requires an argument: --" +
+                                     option);
             }
             (*long_opt)->hit(option, *next);
             next = std::next(next);
@@ -1306,9 +1296,7 @@ class ArgParser {
             if (unknown_option_as_start_of_positionals) {
               break;
             }
-            std::stringstream ss;
-            ss << "invalid option -- --" << option;
-            return {1, ss.str()};
+            throw invalid_argument("invalid option: --" + option);
           }
         }
         current = next;
@@ -1326,13 +1314,10 @@ class ArgParser {
                     [](auto& o) { return o->is_positional(); });
       }
       if (current_position_it == all_options.end()) {
-        std::stringstream ss;
-        ss << "invalid option -- -" << *current;
-        return {1, ss.str()};
+        throw invalid_argument("invalid option: --" + *current);
       }
       (*current_position_it)->hit("", *current);
     }
-    return {0, ""};
   }
 
   std::optional<OptBase*> get(std::string const& f) {

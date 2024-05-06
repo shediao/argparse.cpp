@@ -107,10 +107,7 @@ TEST(Cat, help) {
   auto parser = bind_value();
 
   std::vector<const char*> cmds = {"cat", "--help"};
-  auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
-
-  EXPECT_EQ(0, ret);
-  EXPECT_TRUE(msg.empty());
+  ASSERT_NO_THROW(parser.parse(cmds.size(), cmds.data()));
 
   EXPECT_FALSE(cat_flags.show_all);
   EXPECT_FALSE(cat_flags.number_nonblank);
@@ -128,8 +125,7 @@ TEST(Cat, help) {
 
   using namespace std::literals::string_literals;
   EXPECT_EQ(cat_flags.show_all, parser["show-all"].as<bool>());
-  EXPECT_EQ(cat_flags.number_nonblank,
-            parser["number-nonblank"].as<bool>());
+  EXPECT_EQ(cat_flags.number_nonblank, parser["number-nonblank"].as<bool>());
   EXPECT_EQ(cat_flags.e, parser["e"].as<bool>());
   EXPECT_EQ(cat_flags.show_ends, parser["show-ends"].as<bool>());
   EXPECT_EQ(cat_flags.number, parser["number"].as<bool>());
@@ -137,8 +133,7 @@ TEST(Cat, help) {
   EXPECT_EQ(cat_flags.t, parser["t"].as<bool>());
   EXPECT_EQ(cat_flags.show_tabs, parser["show-tabs"].as<bool>());
   EXPECT_EQ(cat_flags.u, parser["u"].as<bool>());
-  EXPECT_EQ(cat_flags.show_nonprinting,
-            parser["show-nonprinting"].as<bool>());
+  EXPECT_EQ(cat_flags.show_nonprinting, parser["show-nonprinting"].as<bool>());
   EXPECT_EQ(cat_flags.help, parser["help"].as<bool>());
   EXPECT_EQ(cat_flags.version, parser["version"].as<bool>());
 }
@@ -148,10 +143,7 @@ TEST(Cat, version) {
   auto parser = bind_value();
 
   std::vector<const char*> cmds = {"cat", "--version"};
-  auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
-
-  EXPECT_EQ(0, ret);
-  EXPECT_TRUE(msg.empty());
+  ASSERT_NO_THROW(parser.parse(cmds.size(), cmds.data()));
 
   EXPECT_FALSE(cat_flags.show_all);
   EXPECT_FALSE(cat_flags.number_nonblank);
@@ -169,8 +161,7 @@ TEST(Cat, version) {
 
   using namespace std::literals::string_literals;
   EXPECT_EQ(cat_flags.show_all, parser["show-all"].as<bool>());
-  EXPECT_EQ(cat_flags.number_nonblank,
-            parser["number-nonblank"].as<bool>());
+  EXPECT_EQ(cat_flags.number_nonblank, parser["number-nonblank"].as<bool>());
   EXPECT_EQ(cat_flags.e, parser["e"].as<bool>());
   EXPECT_EQ(cat_flags.show_ends, parser["show-ends"].as<bool>());
   EXPECT_EQ(cat_flags.number, parser["number"].as<bool>());
@@ -178,8 +169,7 @@ TEST(Cat, version) {
   EXPECT_EQ(cat_flags.t, parser["t"].as<bool>());
   EXPECT_EQ(cat_flags.show_tabs, parser["show-tabs"].as<bool>());
   EXPECT_EQ(cat_flags.u, parser["u"].as<bool>());
-  EXPECT_EQ(cat_flags.show_nonprinting,
-            parser["show-nonprinting"].as<bool>());
+  EXPECT_EQ(cat_flags.show_nonprinting, parser["show-nonprinting"].as<bool>());
   EXPECT_EQ(cat_flags.help, parser["help"].as<bool>());
   EXPECT_EQ(cat_flags.version, parser["version"].as<bool>());
 }
@@ -189,10 +179,7 @@ TEST(Cat, files) {
   auto parser = bind_value();
 
   std::vector<const char*> cmds = {"cat", "--", "-", "/path/to/file"};
-  auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
-
-  EXPECT_EQ(0, ret);
-  EXPECT_TRUE(msg.empty());
+  ASSERT_NO_THROW(parser.parse(cmds.size(), cmds.data()));
 
   EXPECT_FALSE(cat_flags.show_all);
   EXPECT_FALSE(cat_flags.number_nonblank);
@@ -219,10 +206,7 @@ TEST(Cat, no_args) {
   auto parser = bind_value();
 
   std::vector<const char*> cmds = {"cat"};
-  auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
-
-  EXPECT_EQ(0, ret);
-  EXPECT_TRUE(msg.empty());
+  ASSERT_NO_THROW(parser.parse(cmds.size(), cmds.data()));
 
   EXPECT_FALSE(cat_flags.show_all);
   EXPECT_FALSE(cat_flags.number_nonblank);
@@ -244,10 +228,7 @@ TEST(Cat, other_flag) {
   auto parser = bind_value();
 
   std::vector<const char*> cmds = {"cat", "-n", "--", "-"};
-  auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
-
-  EXPECT_EQ(0, ret);
-  EXPECT_TRUE(msg.empty());
+  ASSERT_NO_THROW(parser.parse(cmds.size(), cmds.data()));
 
   EXPECT_FALSE(cat_flags.show_all);
   EXPECT_FALSE(cat_flags.number_nonblank);

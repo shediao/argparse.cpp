@@ -66,10 +66,7 @@ TEST(Cat, help) {
   auto parser = bind_value();
 
   std::vector<const char*> cmds = {"tac", "--help"};
-  auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
-
-  EXPECT_EQ(0, ret);
-  EXPECT_TRUE(msg.empty());
+  ASSERT_NO_THROW(parser.parse(cmds.size(), cmds.data()));
 
   EXPECT_FALSE(tac_flags.before);
   EXPECT_FALSE(tac_flags.regex);
@@ -84,10 +81,7 @@ TEST(Cat, version) {
   auto parser = bind_value();
 
   std::vector<const char*> cmds = {"tac", "--version"};
-  auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
-
-  EXPECT_EQ(0, ret);
-  EXPECT_TRUE(msg.empty());
+  ASSERT_NO_THROW(parser.parse(cmds.size(), cmds.data()));
 
   EXPECT_FALSE(tac_flags.before);
   EXPECT_FALSE(tac_flags.regex);
@@ -102,7 +96,7 @@ TEST(Cat, files) {
   auto parser = bind_value();
 
   std::vector<const char*> cmds = {"tac", "-"};
-  auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
+  ASSERT_NO_THROW(parser.parse(cmds.size(), cmds.data()));
 
   EXPECT_FALSE(tac_flags.before);
   EXPECT_FALSE(tac_flags.regex);
@@ -120,10 +114,7 @@ TEST(Cat, no_args) {
   auto parser = bind_value();
 
   std::vector<const char*> cmds = {"tac"};
-  auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
-
-  EXPECT_EQ(0, ret);
-  EXPECT_TRUE(msg.empty());
+  ASSERT_NO_THROW(parser.parse(cmds.size(), cmds.data()));
 
   EXPECT_FALSE(tac_flags.before);
   EXPECT_FALSE(tac_flags.regex);
@@ -138,10 +129,7 @@ TEST(Cat, separator) {
   auto parser = bind_value();
 
   std::vector<const char*> cmds = {"tac", "--separator=,"};
-  auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
-
-  EXPECT_EQ(0, ret) << msg;
-  EXPECT_TRUE(msg.empty());
+  ASSERT_NO_THROW(parser.parse(cmds.size(), cmds.data()));
 
   EXPECT_FALSE(tac_flags.before);
   EXPECT_FALSE(tac_flags.regex);
@@ -157,10 +145,8 @@ TEST(Cat, separator2) {
   auto parser = bind_value();
 
   std::vector<const char*> cmds = {"tac", R"(--separator=\n)"};
-  auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
+  ASSERT_NO_THROW(parser.parse(cmds.size(), cmds.data()));
 
-  EXPECT_EQ(0, ret);
-  EXPECT_TRUE(msg.empty());
   EXPECT_EQ(tac_flags.separator, "\\n");
 }
 
@@ -169,10 +155,8 @@ TEST(Cat, separator3) {
   auto parser = bind_value();
 
   std::vector<const char*> cmds = {"tac", "-s", "+"};
-  auto [ret, msg] = parser.parse(cmds.size(), cmds.data());
+  ASSERT_NO_THROW(parser.parse(cmds.size(), cmds.data()));
 
-  EXPECT_EQ(0, ret);
-  EXPECT_TRUE(msg.empty());
   EXPECT_EQ(tac_flags.separator, "+");
 
   std::cout << parser.usage() << std::endl;

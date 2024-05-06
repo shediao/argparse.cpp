@@ -935,7 +935,7 @@ TEST(lscmd, parser_bind) {
 
   std::vector<const char*> cmd{"ls", "-laF"};
 
-  parser.parse(cmd.size(), cmd.data());
+  ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
   ASSERT_TRUE(parser["l"].as<bool>());
   ASSERT_TRUE(parser["a"].as<bool>());
@@ -953,7 +953,7 @@ TEST(lscmd, parser) {
 
   std::vector<const char*> cmd{"ls", "-laF"};
 
-  parser.parse(cmd.size(), cmd.data());
+  ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
   ASSERT_TRUE(parser["l"].as<bool>());
   ASSERT_TRUE(parser["a"].as<bool>());
@@ -968,7 +968,7 @@ TEST(lscmd, parser2_bind) {
 
   std::vector<const char*> cmd{"ls", "-laF", "--color=always"};
 
-  parser.parse(cmd.size(), cmd.data());
+  ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
   ASSERT_TRUE(parser["l"].as<bool>());
   ASSERT_TRUE(parser["a"].as<bool>());
@@ -988,7 +988,7 @@ TEST(lscmd, parser2) {
 
   std::vector<const char*> cmd{"ls", "-laF", "--color=always"};
 
-  parser.parse(cmd.size(), cmd.data());
+  ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
   ASSERT_TRUE(parser["l"].as<bool>());
   ASSERT_TRUE(parser["a"].as<bool>());
@@ -1006,7 +1006,7 @@ TEST(lscmd, parser3_bind) {
   std::vector<const char*> cmd{"ls",  "-laF",    "--color=always", "-G",
                                "./1", "./1/2/3", ".hided/"};
 
-  parser.parse(cmd.size(), cmd.data());
+  ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
   ASSERT_TRUE(parser["l"].as<bool>());
   ASSERT_TRUE(parser["a"].as<bool>());
@@ -1041,7 +1041,7 @@ TEST(lscmd, parser3) {
   std::vector<const char*> cmd{"ls",  "-laF",    "--color=always", "-G",
                                "./1", "./1/2/3", ".hided/"};
 
-  parser.parse(cmd.size(), cmd.data());
+  ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
   ASSERT_TRUE(parser["l"].as<bool>());
   ASSERT_TRUE(parser["a"].as<bool>());
