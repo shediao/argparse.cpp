@@ -465,10 +465,10 @@ class OptBase {
 
  protected:
   enum class Type { FLAG, ALIAS_FLAG, OPTION, POSITIONAL };
-  OptBase::Type virtual type() const = 0;
 
  public:
   virtual ~OptBase() = default;
+  OptBase::Type virtual type() const = 0;
   bool is_flag() const {
     return Type::FLAG == this->type() || is_alias_flag();
   };
@@ -532,6 +532,7 @@ class OptBase {
   }
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
   OptBase& set_default(T const& def_val) {
+    current_is_default_value = true;
     return set_init_value(def_val);
   }
 
@@ -618,6 +619,7 @@ class OptBase {
   std::string help_msg;
   std::string value_placeholder;
   value_type value;
+  bool current_is_default_value{false};
   int hit_count{0};
 };
 class ArgParser;
@@ -763,6 +765,9 @@ class Flag : public OptBase {
               using type = std::remove_reference_t<decltype(val)>;
               if constexpr (is_reference_wrapper_v<type>) {
                 if constexpr (is_flag_bindable_value_v<typename type::type>) {
+                  if (current_is_default_value) {
+                    val.get() = 0;
+                  }
                   if (negate_contains(flag)) {
                     val.get() -= 1;
                   } else if (OptBase::contains(flag)) {
@@ -775,6 +780,9 @@ class Flag : public OptBase {
                 }
               } else {
                 if constexpr (is_flag_bindable_value_v<type>) {
+                  if (current_is_default_value) {
+                    val = 0;
+                  }
                   if (negate_contains(flag)) {
                     val -= 1;
                   } else if (OptBase::contains(flag)) {
@@ -788,6 +796,7 @@ class Flag : public OptBase {
               }
             }},
         value);
+    current_is_default_value = false;
   }
 
   std::vector<std::string> negate_flag_names{};
@@ -922,12 +931,23 @@ class Option : public OptBase {
         [&opt_val, this](auto& x) {
           using T = std::remove_reference_t<decltype(x)>;
           if constexpr (is_reference_wrapper_v<T>) {
+            if constexpr (is_option_bindable_container_v<typename T::type>) {
+              if (current_is_default_value) {
+                x.get().clear();
+              }
+            }
             insert_or_replace_value(x.get(), opt_val, delimiter);
           } else {
+            if constexpr (is_option_bindable_container_v<T>) {
+              if (current_is_default_value) {
+                x.clear();
+              }
+            }
             insert_or_replace_value(x, opt_val, delimiter);
           }
         },
         value);
+    current_is_default_value = false;
   }
 
   char delimiter{'\0'};
@@ -957,22 +977,34 @@ class Positional : public OptBase {
     UNREACHABLE();
   };
   void hit(std::string const& long_name, std::string const& val) override {
-    std::visit(overloaded{[&val, this](auto& v) {
-                 using type = std::remove_reference_t<decltype(v)>;
-                 if constexpr (is_reference_wrapper_v<type>) {
-                   insert_or_replace_value(v.get(), val, delimiter);
-                   if constexpr (!is_option_bindable_container_v<
-                                     typename type::type>) {
-                     can_set_value = false;
-                   }
-                 } else {
-                   insert_or_replace_value(v, val, delimiter);
-                   if constexpr (!is_option_bindable_container_v<type>) {
-                     can_set_value = false;
-                   }
-                 }
-               }},
-               value);
+    std::visit(
+        overloaded{[&val, this](auto& v) {
+          using type = std::remove_reference_t<decltype(v)>;
+          if constexpr (is_reference_wrapper_v<type>) {
+            if constexpr (is_option_bindable_container_v<typename type::type>) {
+              if (current_is_default_value) {
+                v.get().clear();
+              }
+            }
+            insert_or_replace_value(v.get(), val, delimiter);
+            if constexpr (!is_option_bindable_container_v<
+                              typename type::type>) {
+              can_set_value = false;
+            }
+          } else {
+            if constexpr (is_option_bindable_container_v<type>) {
+              if (current_is_default_value) {
+                v.clear();
+              }
+            }
+            insert_or_replace_value(v, val, delimiter);
+            if constexpr (!is_option_bindable_container_v<type>) {
+              can_set_value = false;
+            }
+          }
+        }},
+        value);
+    current_is_default_value = false;
   };
 
   [[nodiscard]] std::string usage() const override { return ""; };
