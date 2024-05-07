@@ -138,11 +138,13 @@ struct is_transformable_type<
 template <typename T, typename U>
 struct is_transformable_type<
     std::pair<T, U>,
-    std::enable_if_t<
-        (std::is_same_v<bool, T> || std::is_same_v<int, T> ||
-         std::is_same_v<double, T> || std::is_same_v<std::string, T>) &&
-        (std::is_same_v<bool, U> || std::is_same_v<int, U> ||
-         std::is_same_v<double, U> || std::is_same_v<std::string, U>)>>
+    std::enable_if_t<(
+        std::is_same_v<bool, T> || std::is_same_v<int, T> ||
+        std::is_same_v<double, T> ||
+        std::is_same_v<std::string, T>)&&(std::is_same_v<bool, U> ||
+                                          std::is_same_v<int, U> ||
+                                          std::is_same_v<double, U> ||
+                                          std::is_same_v<std::string, U>)>>
     : std::true_type {};
 
 template <typename T>
@@ -672,30 +674,31 @@ class Flag : public OptBase {
 
   [[nodiscard]] std::string usage() const override {
     std::stringstream ss;
-    auto it = begin(option_names());
-    if (it != end(option_names())) {
-      if (it->length() == 1) {
-        ss << "-" << *it;
-      } else {
-        ss << "--" << *it;
+    if (auto it = cbegin(option_names()); it != cend(option_names())) {
+      ss << "  ";
+      ss << (it->length() == 1 ? "-" : "--") << *it;
+      while (++it != end(option_names())) {
+        ss << ", " << (it->length() == 1 ? "-" : "--") << *it;
       }
-      it++;
     }
-    if (it != end(option_names())) {
-      if (it->length() == 1) {
-        ss << ",-" << *it;
-      } else {
-        ss << ",--" << *it;
-      }
-      it++;
-    }
-    ss << "\n";
     if (!get_help().empty()) {
-      ss << "         " << get_help() << "\n";
+      ss << "\n";
+      ss << "            " << get_help();
     }
     return ss.str();
   }
-  [[nodiscard]] std::string short_usage() const override { return ""; }
+  [[nodiscard]] std::string short_usage() const override {
+    std::stringstream ss;
+    if (auto it = cbegin(option_names()); it != cend(option_names())) {
+      ss << "[";
+      ss << (it->length() == 1 ? "-" : "--") << *it;
+      while (++it != end(option_names())) {
+        ss << "|" << (it->length() == 1 ? "-" : "--") << *it;
+      }
+      ss << "]";
+    }
+    return ss.str();
+  }
 
  private:
   void Flag_init(std::string const& flag_desc) {
@@ -862,37 +865,42 @@ class Option : public OptBase {
     std::stringstream ss;
     auto it = begin(option_names());
     if (it != end(option_names())) {
-      if (it->length() == 1) {
-        ss << "-" << *it;
-      } else {
-        ss << "--" << *it;
+      ss << "  ";
+      ss << (it->length() == 1 ? "-" : "--") << *it;
+      while (++it != end(option_names())) {
+        ss << "," << (it->length() == 1 ? "-" : "--") << *it;
       }
-      it++;
-    }
-
-    if (it != end(option_names())) {
-      if (it->length() == 1) {
-        ss << ",-" << *it;
+      if (get_value_help().empty()) {
+        ss << "=<TEXT>";
       } else {
-        ss << ",--" << *it;
+        ss << "=<" << get_value_help() << ">";
       }
-      it++;
     }
-    if (get_value_help().empty()) {
-      ss << "=<TEXT>";
-    } else {
-      ss << "=<" << get_value_help() << ">";
-    }
-
-    ss << "\n";
 
     if (!get_help().empty()) {
-      ss << "         " << get_help() << "\n";
+      ss << "\n";
+      ss << "            " << get_help();
     }
-
     return ss.str();
   }
-  [[nodiscard]] std::string short_usage() const override { return ""; }
+  [[nodiscard]] std::string short_usage() const override {
+    std::stringstream ss;
+    if (auto it = cbegin(option_names()); it != cend(option_names())) {
+      ss << "[<";
+      ss << (it->length() == 1 ? "-" : "--") << *it;
+      while (++it != end(option_names())) {
+        ss << "|" << (it->length() == 1 ? "-" : "--") << *it;
+      }
+      ss << "> ";
+      if (get_value_help().empty()) {
+        ss << "<TEXT>";
+      } else {
+        ss << "<" << get_value_help() << ">";
+      }
+      ss << "]";
+    }
+    return ss.str();
+  }
 
   void hit(std::string const& /*long_name*/, std::string const& val) override {
     return hit_impl(val);
@@ -1004,8 +1012,49 @@ class Positional : public OptBase {
     current_is_default_value = false;
   };
 
-  [[nodiscard]] std::string usage() const override { return ""; };
-  [[nodiscard]] std::string short_usage() const override { return ""; }
+  [[nodiscard]] std::string usage() const override {
+    std::stringstream ss;
+    if (!option_names().empty()) {
+      ss << "  ";
+      ss << (get_value_help().empty() ? option_names()[0] : get_value_help());
+      if (!get_help().empty()) {
+        ss << "\n";
+        ss << "            " << get_help();
+      }
+    }
+    return ss.str();
+  };
+  [[nodiscard]] std::string short_usage() const override {
+    std::stringstream ss;
+    auto is_multi_positional = std::visit(
+        [](auto& v) {
+          using type =
+              std::remove_const_t<std::remove_reference_t<decltype(v)>>;
+          if constexpr (is_reference_wrapper_v<type>) {
+            return (is_vector_v<typename type::type> ||
+                    is_map_v<typename type::type>);
+          } else {
+            return (is_vector_v<type> || is_map_v<type>);
+          }
+        },
+        value);
+    if (!option_names().empty()) {
+      if (is_multi_positional) {
+        if (get_value_help().empty()) {
+          ss << option_names()[0] << "...";
+        } else {
+          ss << get_value_help() << "...";
+        }
+      } else {
+        if (get_value_help().empty()) {
+          ss << option_names()[0];
+        } else {
+          ss << get_value_help();
+        }
+      }
+    }
+    return ss.str();
+  }
 
   template <typename T>
   Positional(std::string const& name, T& bind)
@@ -1156,16 +1205,39 @@ class ArgParser {
 
   std::string usage() {
     std::stringstream ss;
-    ss << "\n"
-       << (program_name.empty() ? "?" : program_name) << " [OPTION]... ";
-    if (!any_of(begin(all_options), end(all_options),
-                [](auto& o) { return o->is_positional(); })) {
-      ss << " [--] [args....]";
+    ss << "usage: " << (program_name.empty() ? "?" : program_name);
+    for (auto const& opt : all_options) {
+      if (!opt->is_positional()) {
+        ss << " " << opt->short_usage();
+      }
     }
-    ss << "\n";
-    ss << description << "\n\n";
-    for (auto& all_option : all_options) {
-      ss << all_option->usage() << "\n";
+    for (auto const& opt : all_options) {
+      if (opt->is_positional()) {
+        ss << " " << opt->short_usage();
+      }
+    }
+    ss << "\n\n";
+    if (!description.empty()) {
+      ss << description << "\n\n";
+    }
+
+    if (any_of(begin(all_options), end(all_options),
+               [](auto& opt) { return !opt->is_positional(); })) {
+      ss << "Options:\n";
+      for (auto const& opt : all_options) {
+        if (!opt->is_positional()) {
+          ss << opt->usage() << "\n\n";
+        }
+      }
+    }
+    if (any_of(begin(all_options), end(all_options),
+               [](auto& opt) { return opt->is_positional(); })) {
+      ss << "Positionals:\n";
+      for (auto const& opt : all_options) {
+        if (opt->is_positional()) {
+          ss << opt->usage() << "\n\n";
+        }
+      }
     }
 
     return ss.str();

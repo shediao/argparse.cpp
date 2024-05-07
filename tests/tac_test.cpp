@@ -46,7 +46,10 @@ void reset_tac_flags() {
 }
 
 argparse::ArgParser bind_value() {
-  argparse::ArgParser parser{"concatenate and print files in reverse"};
+  argparse::ArgParser parser{
+      R"(Write each FILE to standard output, last line first.
+
+With no FILE, or when FILE is -, read standard input.)"};
   parser.set_program_name("tac");
   parser.add_flag("-b,--before", tac_flags.before)
       .help("attach the separator before instead of after");
@@ -56,8 +59,11 @@ argparse::ArgParser bind_value() {
   parser.add_flag("--version", tac_flags.version)
       .help("output version information and exit");
   parser.add_option("-s,--separator", tac_flags.separator)
+      .value_help("STRING")
       .help("use STRING as the separator instead of newline");
-  parser.add_positional("files", tac_flags.files);
+  parser.add_positional("files", tac_flags.files)
+      .value_help("FILE")
+      .help("Write each FILE to standard output, last line first.");
   return parser;
 }
 
