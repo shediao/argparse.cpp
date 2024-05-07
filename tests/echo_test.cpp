@@ -37,9 +37,9 @@ class EchoCmdBind : public testing::Test {
     // 怎样判断后续的都是非选项参数
     std::vector<std::string> others;
   };
+  EchoCmdBind() = default;
+  ~EchoCmdBind() override = default;
   void SetUp() override {
-    parser = argparse::ArgParser{};
-    options = EchoOptions{};
     parser.add_flag("n", options.flag_n);
     parser.add_flag("E,!e", options.flag_E).set_default(true);
     parser.add_flag("help", options.flag_help);
@@ -50,14 +50,15 @@ class EchoCmdBind : public testing::Test {
 
   void TearDown() override {}
 
-  argparse::ArgParser parser;
-  EchoOptions options;
+  argparse::ArgParser parser{};
+  EchoOptions options{};
 };
 
 class EchoCmdUnbind : public testing::Test {
  public:
+  EchoCmdUnbind() = default;
+  ~EchoCmdUnbind() override = default;
   void SetUp() override {
-    parser = argparse::ArgParser{};
     parser.add_flag("n");
     parser.add_flag("E,!e").set_default(true);
     parser.add_flag("help");
@@ -66,7 +67,7 @@ class EchoCmdUnbind : public testing::Test {
     parser.set_unknown_option_as_start_of_positionals();
   }
   void TearDown() override {}
-  argparse::ArgParser parser;
+  argparse::ArgParser parser{};
 };
 
 TEST_F(EchoCmdUnbind, check_is_flag) {

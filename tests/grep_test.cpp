@@ -77,8 +77,9 @@
 
 class GrepCmdline : public testing::Test {
  public:
+  GrepCmdline() = default;
+  ~GrepCmdline() override = default;
   void SetUp() override {
-    parser = argparse::ArgParser{};
     parser.set_program_name("grep");
     parser.add_flag("E,extended-regexp")
         .help("PATTERNS are extended regular expressions");
@@ -190,7 +191,7 @@ class GrepCmdline : public testing::Test {
     parser.add_positional("pattern_and_files").value_help("FILES");
   }
 
-  argparse::ArgParser parser;
+  argparse::ArgParser parser{};
 };
 TEST_F(GrepCmdline, test1) {
   std::cout << parser.usage() << std::endl;
