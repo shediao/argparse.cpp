@@ -11,16 +11,17 @@
 //     6. Contents that qualify option values, such as ranges, lists, etc.
 // [√] 7. help info & usage
 // [√] 8. pargram name
-//     9. alias
+// [√] 9. alias
 //     10. setopt(short, long) 支持getopt方式
 //     11. all api test
 //     12. top100 linux command test
 //     13. subcommand support
-//     14. throw execption
+// [√] 14. throw execption
 //     15. CHECK & DCHECK
 
 #include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <charconv>
 #include <iterator>
 #include <map>
@@ -535,6 +536,25 @@ class OptBase {
     return set_init_value(def_val);
   }
 
+  // template <typename T>
+  // OptBase& check(std::function<bool(T const&)> f) {
+  //   auto check_result =
+  //       std::visit(overloaded{[](auto const& /*v*/) -> bool {
+  //                               throw bad_value_access("check failed");
+  //                             },
+  //                             [&f](T const& v) -> bool {
+  //                               if (!f(v)) {
+  //                                 throw bad_value_access("check failed");
+  //                               }
+  //                               return true;
+  //                             }},
+  //                  value);
+  //   if (!check_result) {
+  //     throw bad_value_access("check failed");
+  //   }
+  //   return *this;
+  // }
+
   [[nodiscard]] int count() const { return hit_count; }
   OptBase(OptBase const&) = delete;
   OptBase(OptBase&&) = delete;
@@ -702,7 +722,7 @@ class Flag : public OptBase {
 
  private:
   void Flag_init(std::string const& flag_desc) {
-    // TODO(shediao):
+    // TODO(shediao): trim left and right blank
     // flag is ,
     auto all = StringUtil::split(flag_desc, ',');
     if (all.empty()) {
@@ -713,6 +733,11 @@ class Flag : public OptBase {
       if (f.empty()) {
         throw std::logic_error("flag item name is empty");
       }
+      f = std::string(
+          find_if_not(begin(f), end(f), [](char c) { return std::isspace(c); }),
+          find_if_not(rbegin(f), rend(f), [](char c) {
+            return std::isspace(c);
+          }).base());
 
       if (f[0] == '!') {
         is_negate = true;
@@ -918,6 +943,11 @@ class Option : public OptBase {
       throw std::logic_error("option name is empty");
     }
     for (auto f : all) {
+      f = std::string(
+          find_if_not(begin(f), end(f), [](char c) { return std::isspace(c); }),
+          find_if_not(rbegin(f), rend(f), [](char c) {
+            return std::isspace(c);
+          }).base());
       if (StringUtil::startswith(f, "--")) {
         f = f.substr(2);
       } else if (StringUtil::startswith(f, "-")) {
@@ -1222,19 +1252,20 @@ class ArgParser {
     }
 
     if (any_of(begin(all_options), end(all_options),
-               [](auto& opt) { return !opt->is_positional(); })) {
-      ss << "Options:\n";
-      for (auto const& opt : all_options) {
-        if (!opt->is_positional()) {
-          ss << opt->usage() << "\n\n";
-        }
-      }
-    }
-    if (any_of(begin(all_options), end(all_options),
                [](auto& opt) { return opt->is_positional(); })) {
       ss << "Positional arguments:\n";
       for (auto const& opt : all_options) {
         if (opt->is_positional()) {
+          ss << opt->usage() << "\n\n";
+        }
+      }
+    }
+
+    if (any_of(begin(all_options), end(all_options),
+               [](auto& opt) { return !opt->is_positional(); })) {
+      ss << "Options:\n";
+      for (auto const& opt : all_options) {
+        if (!opt->is_positional()) {
           ss << opt->usage() << "\n\n";
         }
       }
