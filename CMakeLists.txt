@@ -17,6 +17,8 @@ endif()
 include_directories(include)
 
 add_library(argparse INTERFACE)
+add_executable(example src/example.cpp)
+target_link_libraries(example PRIVATE argparse)
 
 add_subdirectory(third_party/googletest)
 

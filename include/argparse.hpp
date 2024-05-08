@@ -1232,7 +1232,7 @@ class ArgParser {
     }
     if (any_of(begin(all_options), end(all_options),
                [](auto& opt) { return opt->is_positional(); })) {
-      ss << "Positionals:\n";
+      ss << "Positional arguments:\n";
       for (auto const& opt : all_options) {
         if (opt->is_positional()) {
           ss << opt->usage() << "\n\n";
@@ -1248,6 +1248,7 @@ class ArgParser {
   }
 
   void parse(int argc, const char* const* argv) {
+    add_help_flag_if_needed();
     std::vector<std::string> command_line_args{argv, argv + argc};
 
     if (command_line_args.empty()) {
@@ -1277,15 +1278,15 @@ class ArgParser {
       auto const& curr_arg = *current;
 
       if (StringUtil::is_position_arg(curr_arg)) {
-        while (!(dynamic_cast<Positional*>(current_position_it->get()))
-                    ->can_set_value &&
-               current_position_it != all_options.end()) {
+        while (current_position_it != all_options.end() &&
+               !(dynamic_cast<Positional*>(current_position_it->get()))
+                    ->can_set_value) {
           current_position_it =
               find_if(std::next(current_position_it), end(all_options),
                       [](auto& o) { return o->is_positional(); });
         }
         if (current_position_it == all_options.end()) {
-          throw invalid_argument("invalid option: -" + curr_arg);
+          throw invalid_argument("unrecognized arguments: " + curr_arg);
         }
         (*current_position_it)->hit("", curr_arg);
         current = next;
@@ -1386,7 +1387,7 @@ class ArgParser {
                     [](auto& o) { return o->is_positional(); });
       }
       if (current_position_it == all_options.end()) {
-        throw invalid_argument("invalid option: --" + *current);
+        throw invalid_argument("unrecognized arguments: " + *current);
       }
       (*current_position_it)->hit("", *current);
     }
@@ -1410,6 +1411,23 @@ class ArgParser {
   }
 
  private:
+  void add_help_flag_if_needed() {
+    auto has_h_flag = get_flag("h").has_value();
+    auto has_help_flag = get_flag("help").has_value();
+    const char* msg = "display this help and exit";
+    if (!has_h_flag && !has_help_flag) {
+      add_flag("-h,--help").help(msg);
+      return;
+    }
+    if (!has_h_flag) {
+      add_flag("-h").help(msg);
+      return;
+    }
+    if (!has_help_flag) {
+      add_flag("--help").help(msg);
+      return;
+    }
+  }
   std::optional<Flag*> get_flag(char const flag) {
     return get_flag(std::string(1, flag));
   }
