@@ -18,6 +18,7 @@
 //     13. subcommand support
 // [√] 14. throw execption
 //     15. CHECK & DCHECK
+//     16. format help info
 
 #include <algorithm>
 #include <cassert>
@@ -911,12 +912,12 @@ class Option : public OptBase {
   [[nodiscard]] std::string short_usage() const override {
     std::stringstream ss;
     if (auto it = cbegin(option_names()); it != cend(option_names())) {
-      ss << "[<";
+      ss << "[";
       ss << (it->length() == 1 ? "-" : "--") << *it;
       while (++it != end(option_names())) {
         ss << "|" << (it->length() == 1 ? "-" : "--") << *it;
       }
-      ss << "> ";
+      ss << " ";
       if (get_value_help().empty()) {
         ss << "<TEXT>";
       } else {
