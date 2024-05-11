@@ -338,7 +338,7 @@ inline std::vector<std::string> split(std::string const& s,
                                       char delimiter,
                                       int number = 0) {
   std::vector<std::string> result;
-  std::stringstream ss{s};
+  std::istringstream ss{s};
   std::string token;
   int splitCount = 0;
   while ((number <= 0 || splitCount++ < number) &&
@@ -694,7 +694,7 @@ class Flag : public OptBase {
   }
 
   [[nodiscard]] std::string usage() const override {
-    std::stringstream ss;
+    std::ostringstream ss;
     if (auto it = cbegin(option_names()); it != cend(option_names())) {
       ss << "  ";
       ss << (it->length() == 1 ? "-" : "--") << *it;
@@ -709,7 +709,7 @@ class Flag : public OptBase {
     return ss.str();
   }
   [[nodiscard]] std::string short_usage() const override {
-    std::stringstream ss;
+    std::ostringstream ss;
     if (auto it = cbegin(option_names()); it != cend(option_names())) {
       ss << "[";
       ss << (it->length() == 1 ? "-" : "--") << *it;
@@ -888,7 +888,7 @@ class Option : public OptBase {
     Option_init(option_desc);
   }
   [[nodiscard]] std::string usage() const override {
-    std::stringstream ss;
+    std::ostringstream ss;
     auto it = begin(option_names());
     if (it != end(option_names())) {
       ss << "  ";
@@ -910,7 +910,7 @@ class Option : public OptBase {
     return ss.str();
   }
   [[nodiscard]] std::string short_usage() const override {
-    std::stringstream ss;
+    std::ostringstream ss;
     if (auto it = cbegin(option_names()); it != cend(option_names())) {
       ss << "[";
       ss << (it->length() == 1 ? "-" : "--") << *it;
@@ -1044,7 +1044,7 @@ class Positional : public OptBase {
   };
 
   [[nodiscard]] std::string usage() const override {
-    std::stringstream ss;
+    std::ostringstream ss;
     if (!option_names().empty()) {
       ss << "  ";
       ss << (get_value_help().empty() ? option_names()[0] : get_value_help());
@@ -1056,7 +1056,7 @@ class Positional : public OptBase {
     return ss.str();
   };
   [[nodiscard]] std::string short_usage() const override {
-    std::stringstream ss;
+    std::ostringstream ss;
     auto is_multi_positional = std::visit(
         [](auto& v) {
           using type =
@@ -1235,7 +1235,7 @@ class ArgParser {
   }
 
   std::string usage() {
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << "usage: " << (program_name.empty() ? "?" : program_name);
     for (auto const& opt : all_options) {
       if (!opt->is_positional()) {
