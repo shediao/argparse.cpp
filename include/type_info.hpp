@@ -2,6 +2,7 @@
 #define _ARGPARSE_TYPE_INFO_
 #include <map>
 #include <variant>
+#include <vector>
 namespace argparse {
 
 template <typename... T>

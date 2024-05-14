@@ -1,6 +1,5 @@
 #include "type_info.hpp"
 
-#include <__tuple/tuple_size.h>
 #include <gtest/gtest.h>
 #include <tuple>
 #include <type_traits>
