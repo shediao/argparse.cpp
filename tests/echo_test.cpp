@@ -76,10 +76,10 @@ TEST_F(EchoCmdUnbind, check_is_flag) {
   ASSERT_TRUE(parser["help"].is_flag());
   ASSERT_TRUE(parser["version"].is_flag());
 
-  ASSERT_FALSE(parser["n"].as<bool>());
-  ASSERT_TRUE(parser["E"].as<bool>());
-  ASSERT_FALSE(parser["help"].as<bool>());
-  ASSERT_FALSE(parser["version"].as<bool>());
+  ASSERT_FALSE(parser["n"].get<bool>());
+  ASSERT_TRUE(parser["E"].get<bool>());
+  ASSERT_FALSE(parser["help"].get<bool>());
+  ASSERT_FALSE(parser["version"].get<bool>());
 }
 
 TEST_F(EchoCmdBind, check_is_flag) {
@@ -93,13 +93,13 @@ TEST_F(EchoCmdBind, parser_unbind) {
   std::vector<const char*> cmd{"echo", "-n", "123456"};
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_TRUE(parser["n"].as<bool>());
-  ASSERT_TRUE(parser["E"].as<bool>());
-  ASSERT_FALSE(parser["help"].as<bool>());
-  ASSERT_FALSE(parser["version"].as<bool>());
+  ASSERT_TRUE(parser["n"].get<bool>());
+  ASSERT_TRUE(parser["E"].get<bool>());
+  ASSERT_FALSE(parser["help"].get<bool>());
+  ASSERT_FALSE(parser["version"].get<bool>());
 
-  ASSERT_EQ(parser["others"].as<std::vector<std::string>>().size(), 1);
-  ASSERT_EQ(parser["others"].as<std::vector<std::string>>()[0], "123456");
+  ASSERT_EQ(parser["others"].get<std::vector<std::string>>().size(), 1);
+  ASSERT_EQ(parser["others"].get<std::vector<std::string>>()[0], "123456");
 }
 
 TEST_F(EchoCmdBind, parser_bind) {
@@ -119,13 +119,13 @@ TEST_F(EchoCmdUnbind, parser1_unbind) {
   std::vector<const char*> cmd{"echo", "-e", "123456"};
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_FALSE(parser["n"].as<bool>());
-  ASSERT_FALSE(parser["E"].as<bool>());
-  ASSERT_FALSE(parser["help"].as<bool>());
-  ASSERT_FALSE(parser["version"].as<bool>());
+  ASSERT_FALSE(parser["n"].get<bool>());
+  ASSERT_FALSE(parser["E"].get<bool>());
+  ASSERT_FALSE(parser["help"].get<bool>());
+  ASSERT_FALSE(parser["version"].get<bool>());
 
-  ASSERT_EQ(parser["others"].as<std::vector<std::string>>().size(), 1);
-  ASSERT_EQ(parser["others"].as<std::vector<std::string>>()[0], "123456");
+  ASSERT_EQ(parser["others"].get<std::vector<std::string>>().size(), 1);
+  ASSERT_EQ(parser["others"].get<std::vector<std::string>>()[0], "123456");
 }
 
 TEST_F(EchoCmdBind, parser1_bind) {
@@ -150,17 +150,17 @@ TEST_F(EchoCmdUnbind, parser2_unbind) {
                                "--help", "--version", "123456"};
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_FALSE(parser["n"].as<bool>());
-  ASSERT_TRUE(parser["E"].as<bool>());
-  ASSERT_FALSE(parser["help"].as<bool>());
-  ASSERT_FALSE(parser["version"].as<bool>());
+  ASSERT_FALSE(parser["n"].get<bool>());
+  ASSERT_TRUE(parser["E"].get<bool>());
+  ASSERT_FALSE(parser["help"].get<bool>());
+  ASSERT_FALSE(parser["version"].get<bool>());
 
-  ASSERT_EQ(parser["others"].as<std::vector<std::string>>().size(), 5);
-  ASSERT_EQ(parser["others"].as<std::vector<std::string>>()[0], "--test");
-  ASSERT_EQ(parser["others"].as<std::vector<std::string>>()[1], "-n");
-  ASSERT_EQ(parser["others"].as<std::vector<std::string>>()[2], "--help");
-  ASSERT_EQ(parser["others"].as<std::vector<std::string>>()[3], "--version");
-  ASSERT_EQ(parser["others"].as<std::vector<std::string>>()[4], "123456");
+  ASSERT_EQ(parser["others"].get<std::vector<std::string>>().size(), 5);
+  ASSERT_EQ(parser["others"].get<std::vector<std::string>>()[0], "--test");
+  ASSERT_EQ(parser["others"].get<std::vector<std::string>>()[1], "-n");
+  ASSERT_EQ(parser["others"].get<std::vector<std::string>>()[2], "--help");
+  ASSERT_EQ(parser["others"].get<std::vector<std::string>>()[3], "--version");
+  ASSERT_EQ(parser["others"].get<std::vector<std::string>>()[4], "123456");
 }
 
 TEST_F(EchoCmdBind, parser2_bind) {

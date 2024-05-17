@@ -40,7 +40,7 @@ TEST(PyArgParse, example_3) {
 
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_EQ(parser["square"].as<int>(), 4);
+  ASSERT_EQ(parser["square"].get<int>(), 4);
 }
 
 TEST(PyArgParse, example_4) {
@@ -50,7 +50,7 @@ TEST(PyArgParse, example_4) {
 
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_EQ(parser["verbosity"].as<int>(), 3);
+  ASSERT_EQ(parser["verbosity"].get<int>(), 3);
 
   parser = argparse::ArgParser{};
 
@@ -69,7 +69,7 @@ TEST(PyArgParse, example_5) {
   std::vector<const char*> cmd{"argparse", "--verbose", "-v"};
 
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
-  ASSERT_TRUE(parser["verbose"].as<bool>());
+  ASSERT_TRUE(parser["verbose"].get<bool>());
 
   cmd = {"argparse", "--verbose=1"};
   parser = argparse::ArgParser{};
@@ -89,6 +89,6 @@ TEST(PyArgParse, example_6) {
 
   std::vector<const char*> cmd{"argparse", "4", "-v", "3"};
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
-  ASSERT_EQ(parser["square"].as<int>(), 4);
-  ASSERT_EQ(parser["verbosity"].as<int>(), 3);
+  ASSERT_EQ(parser["square"].get<int>(), 4);
+  ASSERT_EQ(parser["verbosity"].get<int>(), 3);
 }

@@ -140,13 +140,11 @@ struct is_transformable_type<
 template <typename T, typename U>
 struct is_transformable_type<
     std::pair<T, U>,
-    std::enable_if_t<(
-        std::is_same_v<bool, T> || std::is_same_v<int, T> ||
-        std::is_same_v<double, T> ||
-        std::is_same_v<std::string, T>)&&(std::is_same_v<bool, U> ||
-                                          std::is_same_v<int, U> ||
-                                          std::is_same_v<double, U> ||
-                                          std::is_same_v<std::string, U>)>>
+    std::enable_if_t<
+        (std::is_same_v<bool, T> || std::is_same_v<int, T> ||
+         std::is_same_v<double, T> || std::is_same_v<std::string, T>) &&
+        (std::is_same_v<bool, U> || std::is_same_v<int, U> ||
+         std::is_same_v<double, U> || std::is_same_v<std::string, U>)>>
     : std::true_type {};
 
 template <typename T>
@@ -478,7 +476,7 @@ class OptBase {
   bool is_positional() const { return Type::POSITIONAL == this->type(); };
 
   template <typename T, typename = std::enable_if_t<is_bindable_value_v<T>>>
-  T const& as() const {
+  T const& get() const {
     try {
       if (std::holds_alternative<std::reference_wrapper<T>>(value)) {
         return std::get<std::reference_wrapper<T>>(value).get();

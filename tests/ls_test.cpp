@@ -734,101 +734,101 @@ TEST_F(LSCommandBind, lscmd_bind) {
   ASSERT_TRUE(parser.get("files_or_directories").value()->is_positional());
 
   ///////////////
-  ASSERT_EQ(parser["@"].as<bool>(), option.flag_at);
-  ASSERT_EQ(parser["A"].as<bool>(), option.flag_A);
-  ASSERT_EQ(parser["B"].as<bool>(), option.flag_B);
-  ASSERT_EQ(parser["C"].as<bool>(), option.flag_C);
-  ASSERT_EQ(parser["F"].as<bool>(), option.flag_F);
-  ASSERT_EQ(parser["H"].as<bool>(), option.flag_H);
-  ASSERT_EQ(parser["I"].as<bool>(), option.flag_I);
-  ASSERT_EQ(parser["L"].as<bool>(), option.flag_L);
-  ASSERT_EQ(parser["O"].as<bool>(), option.flag_O);
-  ASSERT_EQ(parser["P"].as<bool>(), option.flag_P);
-  ASSERT_EQ(parser["R"].as<bool>(), option.flag_R);
-  ASSERT_EQ(parser["S"].as<bool>(), option.flag_S);
-  ASSERT_EQ(parser["T"].as<bool>(), option.flag_T);
-  ASSERT_EQ(parser["U"].as<bool>(), option.flag_U);
-  ASSERT_EQ(parser["W"].as<bool>(), option.flag_W);
-  ASSERT_EQ(parser["a"].as<bool>(), option.flag_a);
-  ASSERT_EQ(parser["b"].as<bool>(), option.flag_b);
-  ASSERT_EQ(parser["c"].as<bool>(), option.flag_c);
-  ASSERT_EQ(parser["d"].as<bool>(), option.flag_d);
-  ASSERT_EQ(parser["e"].as<bool>(), option.flag_e);
-  ASSERT_EQ(parser["f"].as<bool>(), option.flag_f);
-  ASSERT_EQ(parser["g"].as<bool>(), option.flag_g);
-  ASSERT_EQ(parser["h"].as<bool>(), option.flag_h);
-  ASSERT_EQ(parser["i"].as<bool>(), option.flag_i);
-  ASSERT_EQ(parser["k"].as<bool>(), option.flag_k);
-  ASSERT_EQ(parser["l"].as<bool>(), option.flag_l);
-  ASSERT_EQ(parser["m"].as<bool>(), option.flag_m);
-  ASSERT_EQ(parser["n"].as<bool>(), option.flag_n);
-  ASSERT_EQ(parser["o"].as<bool>(), option.flag_o);
-  ASSERT_EQ(parser["p"].as<bool>(), option.flag_p);
-  ASSERT_EQ(parser["q"].as<bool>(), option.flag_q);
-  ASSERT_EQ(parser["r"].as<bool>(), option.flag_r);
-  ASSERT_EQ(parser["s"].as<bool>(), option.flag_s);
-  ASSERT_EQ(parser["t"].as<bool>(), option.flag_t);
-  ASSERT_EQ(parser["u"].as<bool>(), option.flag_u);
-  ASSERT_EQ(parser["v"].as<bool>(), option.flag_v);
-  ASSERT_EQ(parser["w"].as<bool>(), option.flag_w);
-  ASSERT_EQ(parser["x"].as<bool>(), option.flag_x);
-  ASSERT_EQ(parser["y"].as<bool>(), option.flag_y);
-  ASSERT_EQ(parser["1"].as<bool>(), option.flag_1);
-  ASSERT_EQ(parser["%"].as<bool>(), option.flag_percent);
+  ASSERT_EQ(parser["@"].get<bool>(), option.flag_at);
+  ASSERT_EQ(parser["A"].get<bool>(), option.flag_A);
+  ASSERT_EQ(parser["B"].get<bool>(), option.flag_B);
+  ASSERT_EQ(parser["C"].get<bool>(), option.flag_C);
+  ASSERT_EQ(parser["F"].get<bool>(), option.flag_F);
+  ASSERT_EQ(parser["H"].get<bool>(), option.flag_H);
+  ASSERT_EQ(parser["I"].get<bool>(), option.flag_I);
+  ASSERT_EQ(parser["L"].get<bool>(), option.flag_L);
+  ASSERT_EQ(parser["O"].get<bool>(), option.flag_O);
+  ASSERT_EQ(parser["P"].get<bool>(), option.flag_P);
+  ASSERT_EQ(parser["R"].get<bool>(), option.flag_R);
+  ASSERT_EQ(parser["S"].get<bool>(), option.flag_S);
+  ASSERT_EQ(parser["T"].get<bool>(), option.flag_T);
+  ASSERT_EQ(parser["U"].get<bool>(), option.flag_U);
+  ASSERT_EQ(parser["W"].get<bool>(), option.flag_W);
+  ASSERT_EQ(parser["a"].get<bool>(), option.flag_a);
+  ASSERT_EQ(parser["b"].get<bool>(), option.flag_b);
+  ASSERT_EQ(parser["c"].get<bool>(), option.flag_c);
+  ASSERT_EQ(parser["d"].get<bool>(), option.flag_d);
+  ASSERT_EQ(parser["e"].get<bool>(), option.flag_e);
+  ASSERT_EQ(parser["f"].get<bool>(), option.flag_f);
+  ASSERT_EQ(parser["g"].get<bool>(), option.flag_g);
+  ASSERT_EQ(parser["h"].get<bool>(), option.flag_h);
+  ASSERT_EQ(parser["i"].get<bool>(), option.flag_i);
+  ASSERT_EQ(parser["k"].get<bool>(), option.flag_k);
+  ASSERT_EQ(parser["l"].get<bool>(), option.flag_l);
+  ASSERT_EQ(parser["m"].get<bool>(), option.flag_m);
+  ASSERT_EQ(parser["n"].get<bool>(), option.flag_n);
+  ASSERT_EQ(parser["o"].get<bool>(), option.flag_o);
+  ASSERT_EQ(parser["p"].get<bool>(), option.flag_p);
+  ASSERT_EQ(parser["q"].get<bool>(), option.flag_q);
+  ASSERT_EQ(parser["r"].get<bool>(), option.flag_r);
+  ASSERT_EQ(parser["s"].get<bool>(), option.flag_s);
+  ASSERT_EQ(parser["t"].get<bool>(), option.flag_t);
+  ASSERT_EQ(parser["u"].get<bool>(), option.flag_u);
+  ASSERT_EQ(parser["v"].get<bool>(), option.flag_v);
+  ASSERT_EQ(parser["w"].get<bool>(), option.flag_w);
+  ASSERT_EQ(parser["x"].get<bool>(), option.flag_x);
+  ASSERT_EQ(parser["y"].get<bool>(), option.flag_y);
+  ASSERT_EQ(parser["1"].get<bool>(), option.flag_1);
+  ASSERT_EQ(parser["%"].get<bool>(), option.flag_percent);
   // TODO
-  // ASSERT_EQ(parser.[","].as<bool>(), option->flag_comma);
-  ASSERT_EQ(parser["D"].as<std::string>(), option.option_D);
-  ASSERT_EQ(parser["color"].as<std::string>(), option.option_color);
-  ASSERT_EQ(parser["files_or_directories"].as<std::vector<std::string>>(),
+  // ASSERT_EQ(parser.[","].get<bool>(), option->flag_comma);
+  ASSERT_EQ(parser["D"].get<std::string>(), option.option_D);
+  ASSERT_EQ(parser["color"].get<std::string>(), option.option_color);
+  ASSERT_EQ(parser["files_or_directories"].get<std::vector<std::string>>(),
             option.files_or_directories);
 
   /////////////
-  ASSERT_EQ(&(parser["@"].as<bool>()), &(option.flag_at));
-  ASSERT_EQ(&(parser["A"].as<bool>()), &(option.flag_A));
-  ASSERT_EQ(&(parser["B"].as<bool>()), &(option.flag_B));
-  ASSERT_EQ(&(parser["C"].as<bool>()), &(option.flag_C));
-  ASSERT_EQ(&(parser["F"].as<bool>()), &(option.flag_F));
-  ASSERT_EQ(&(parser["H"].as<bool>()), &(option.flag_H));
-  ASSERT_EQ(&(parser["I"].as<bool>()), &(option.flag_I));
-  ASSERT_EQ(&(parser["L"].as<bool>()), &(option.flag_L));
-  ASSERT_EQ(&(parser["O"].as<bool>()), &(option.flag_O));
-  ASSERT_EQ(&(parser["P"].as<bool>()), &(option.flag_P));
-  ASSERT_EQ(&(parser["R"].as<bool>()), &(option.flag_R));
-  ASSERT_EQ(&(parser["S"].as<bool>()), &(option.flag_S));
-  ASSERT_EQ(&(parser["T"].as<bool>()), &(option.flag_T));
-  ASSERT_EQ(&(parser["U"].as<bool>()), &(option.flag_U));
-  ASSERT_EQ(&(parser["W"].as<bool>()), &(option.flag_W));
-  ASSERT_EQ(&(parser["a"].as<bool>()), &(option.flag_a));
-  ASSERT_EQ(&(parser["b"].as<bool>()), &(option.flag_b));
-  ASSERT_EQ(&(parser["c"].as<bool>()), &(option.flag_c));
-  ASSERT_EQ(&(parser["d"].as<bool>()), &(option.flag_d));
-  ASSERT_EQ(&(parser["e"].as<bool>()), &(option.flag_e));
-  ASSERT_EQ(&(parser["f"].as<bool>()), &(option.flag_f));
-  ASSERT_EQ(&(parser["g"].as<bool>()), &(option.flag_g));
-  ASSERT_EQ(&(parser["h"].as<bool>()), &(option.flag_h));
-  ASSERT_EQ(&(parser["i"].as<bool>()), &(option.flag_i));
-  ASSERT_EQ(&(parser["k"].as<bool>()), &(option.flag_k));
-  ASSERT_EQ(&(parser["l"].as<bool>()), &(option.flag_l));
-  ASSERT_EQ(&(parser["m"].as<bool>()), &(option.flag_m));
-  ASSERT_EQ(&(parser["n"].as<bool>()), &(option.flag_n));
-  ASSERT_EQ(&(parser["o"].as<bool>()), &(option.flag_o));
-  ASSERT_EQ(&(parser["p"].as<bool>()), &(option.flag_p));
-  ASSERT_EQ(&(parser["q"].as<bool>()), &(option.flag_q));
-  ASSERT_EQ(&(parser["r"].as<bool>()), &(option.flag_r));
-  ASSERT_EQ(&(parser["s"].as<bool>()), &(option.flag_s));
-  ASSERT_EQ(&(parser["t"].as<bool>()), &(option.flag_t));
-  ASSERT_EQ(&(parser["u"].as<bool>()), &(option.flag_u));
-  ASSERT_EQ(&(parser["v"].as<bool>()), &(option.flag_v));
-  ASSERT_EQ(&(parser["w"].as<bool>()), &(option.flag_w));
-  ASSERT_EQ(&(parser["x"].as<bool>()), &(option.flag_x));
-  ASSERT_EQ(&(parser["y"].as<bool>()), &(option.flag_y));
-  ASSERT_EQ(&(parser["1"].as<bool>()), &(option.flag_1));
-  ASSERT_EQ(&(parser["%"].as<bool>()), &(option.flag_percent));
+  ASSERT_EQ(&(parser["@"].get<bool>()), &(option.flag_at));
+  ASSERT_EQ(&(parser["A"].get<bool>()), &(option.flag_A));
+  ASSERT_EQ(&(parser["B"].get<bool>()), &(option.flag_B));
+  ASSERT_EQ(&(parser["C"].get<bool>()), &(option.flag_C));
+  ASSERT_EQ(&(parser["F"].get<bool>()), &(option.flag_F));
+  ASSERT_EQ(&(parser["H"].get<bool>()), &(option.flag_H));
+  ASSERT_EQ(&(parser["I"].get<bool>()), &(option.flag_I));
+  ASSERT_EQ(&(parser["L"].get<bool>()), &(option.flag_L));
+  ASSERT_EQ(&(parser["O"].get<bool>()), &(option.flag_O));
+  ASSERT_EQ(&(parser["P"].get<bool>()), &(option.flag_P));
+  ASSERT_EQ(&(parser["R"].get<bool>()), &(option.flag_R));
+  ASSERT_EQ(&(parser["S"].get<bool>()), &(option.flag_S));
+  ASSERT_EQ(&(parser["T"].get<bool>()), &(option.flag_T));
+  ASSERT_EQ(&(parser["U"].get<bool>()), &(option.flag_U));
+  ASSERT_EQ(&(parser["W"].get<bool>()), &(option.flag_W));
+  ASSERT_EQ(&(parser["a"].get<bool>()), &(option.flag_a));
+  ASSERT_EQ(&(parser["b"].get<bool>()), &(option.flag_b));
+  ASSERT_EQ(&(parser["c"].get<bool>()), &(option.flag_c));
+  ASSERT_EQ(&(parser["d"].get<bool>()), &(option.flag_d));
+  ASSERT_EQ(&(parser["e"].get<bool>()), &(option.flag_e));
+  ASSERT_EQ(&(parser["f"].get<bool>()), &(option.flag_f));
+  ASSERT_EQ(&(parser["g"].get<bool>()), &(option.flag_g));
+  ASSERT_EQ(&(parser["h"].get<bool>()), &(option.flag_h));
+  ASSERT_EQ(&(parser["i"].get<bool>()), &(option.flag_i));
+  ASSERT_EQ(&(parser["k"].get<bool>()), &(option.flag_k));
+  ASSERT_EQ(&(parser["l"].get<bool>()), &(option.flag_l));
+  ASSERT_EQ(&(parser["m"].get<bool>()), &(option.flag_m));
+  ASSERT_EQ(&(parser["n"].get<bool>()), &(option.flag_n));
+  ASSERT_EQ(&(parser["o"].get<bool>()), &(option.flag_o));
+  ASSERT_EQ(&(parser["p"].get<bool>()), &(option.flag_p));
+  ASSERT_EQ(&(parser["q"].get<bool>()), &(option.flag_q));
+  ASSERT_EQ(&(parser["r"].get<bool>()), &(option.flag_r));
+  ASSERT_EQ(&(parser["s"].get<bool>()), &(option.flag_s));
+  ASSERT_EQ(&(parser["t"].get<bool>()), &(option.flag_t));
+  ASSERT_EQ(&(parser["u"].get<bool>()), &(option.flag_u));
+  ASSERT_EQ(&(parser["v"].get<bool>()), &(option.flag_v));
+  ASSERT_EQ(&(parser["w"].get<bool>()), &(option.flag_w));
+  ASSERT_EQ(&(parser["x"].get<bool>()), &(option.flag_x));
+  ASSERT_EQ(&(parser["y"].get<bool>()), &(option.flag_y));
+  ASSERT_EQ(&(parser["1"].get<bool>()), &(option.flag_1));
+  ASSERT_EQ(&(parser["%"].get<bool>()), &(option.flag_percent));
   // TODO
-  // ASSERT_EQ(&(parser.[","].as<bool>()), &(option.flag_comma));
-  ASSERT_EQ(&(parser["D"].as<std::string>()), &(option.option_D));
-  ASSERT_EQ(&(parser["color"].as<std::string>()), &(option.option_color));
-  ASSERT_EQ(&(parser["files_or_directories"].as<std::vector<std::string>>()),
+  // ASSERT_EQ(&(parser.[","].get<bool>()), &(option.flag_comma));
+  ASSERT_EQ(&(parser["D"].get<std::string>()), &(option.option_D));
+  ASSERT_EQ(&(parser["color"].get<std::string>()), &(option.option_color));
+  ASSERT_EQ(&(parser["files_or_directories"].get<std::vector<std::string>>()),
             &(option.files_or_directories));
 }
 
@@ -930,9 +930,9 @@ TEST_F(LSCommand, lscmd) {
 }
 
 TEST_F(LSCommandBind, parser_bind) {
-  ASSERT_FALSE(parser["l"].as<bool>());
-  ASSERT_FALSE(parser["a"].as<bool>());
-  ASSERT_FALSE(parser["F"].as<bool>());
+  ASSERT_FALSE(parser["l"].get<bool>());
+  ASSERT_FALSE(parser["a"].get<bool>());
+  ASSERT_FALSE(parser["F"].get<bool>());
 
   ASSERT_FALSE(option.flag_l);
   ASSERT_FALSE(option.flag_a);
@@ -942,63 +942,63 @@ TEST_F(LSCommandBind, parser_bind) {
 
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_TRUE(parser["l"].as<bool>());
-  ASSERT_TRUE(parser["a"].as<bool>());
-  ASSERT_TRUE(parser["F"].as<bool>());
+  ASSERT_TRUE(parser["l"].get<bool>());
+  ASSERT_TRUE(parser["a"].get<bool>());
+  ASSERT_TRUE(parser["F"].get<bool>());
   ASSERT_TRUE(option.flag_l);
   ASSERT_TRUE(option.flag_a);
   ASSERT_TRUE(option.flag_F);
 }
 
 TEST_F(LSCommand, parser) {
-  ASSERT_FALSE(parser["l"].as<bool>());
-  ASSERT_FALSE(parser["a"].as<bool>());
-  ASSERT_FALSE(parser["F"].as<bool>());
+  ASSERT_FALSE(parser["l"].get<bool>());
+  ASSERT_FALSE(parser["a"].get<bool>());
+  ASSERT_FALSE(parser["F"].get<bool>());
 
   std::vector<const char*> cmd{"ls", "-laF"};
 
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_TRUE(parser["l"].as<bool>());
-  ASSERT_TRUE(parser["a"].as<bool>());
-  ASSERT_TRUE(parser["F"].as<bool>());
+  ASSERT_TRUE(parser["l"].get<bool>());
+  ASSERT_TRUE(parser["a"].get<bool>());
+  ASSERT_TRUE(parser["F"].get<bool>());
 }
 
 TEST_F(LSCommandBind, parser2_bind) {
-  ASSERT_EQ(parser["color"].as<std::string>(), "when");
+  ASSERT_EQ(parser["color"].get<std::string>(), "when");
   ASSERT_EQ(option.option_color, "when");
 
   std::vector<const char*> cmd{"ls", "-laF", "--color=always"};
 
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_TRUE(parser["l"].as<bool>());
-  ASSERT_TRUE(parser["a"].as<bool>());
-  ASSERT_TRUE(parser["F"].as<bool>());
+  ASSERT_TRUE(parser["l"].get<bool>());
+  ASSERT_TRUE(parser["a"].get<bool>());
+  ASSERT_TRUE(parser["F"].get<bool>());
   ASSERT_TRUE(option.flag_l);
   ASSERT_TRUE(option.flag_a);
   ASSERT_TRUE(option.flag_F);
 
-  ASSERT_EQ(parser["color"].as<std::string>(), "always");
+  ASSERT_EQ(parser["color"].get<std::string>(), "always");
   ASSERT_EQ(option.option_color, "always");
 }
 
 TEST_F(LSCommand, parser2) {
-  ASSERT_EQ(parser["color"].as<std::string>(), "when");
+  ASSERT_EQ(parser["color"].get<std::string>(), "when");
 
   std::vector<const char*> cmd{"ls", "-laF", "--color=always"};
 
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_TRUE(parser["l"].as<bool>());
-  ASSERT_TRUE(parser["a"].as<bool>());
-  ASSERT_TRUE(parser["F"].as<bool>());
+  ASSERT_TRUE(parser["l"].get<bool>());
+  ASSERT_TRUE(parser["a"].get<bool>());
+  ASSERT_TRUE(parser["F"].get<bool>());
 
-  ASSERT_EQ(parser["color"].as<std::string>(), "always");
+  ASSERT_EQ(parser["color"].get<std::string>(), "always");
 }
 
 TEST_F(LSCommandBind, parser3_bind) {
-  ASSERT_EQ(parser["color"].as<std::string>(), "when");
+  ASSERT_EQ(parser["color"].get<std::string>(), "when");
   ASSERT_EQ(option.option_color, "when");
 
   std::vector<const char*> cmd{"ls",  "-laF",    "--color=always", "-G",
@@ -1006,23 +1006,23 @@ TEST_F(LSCommandBind, parser3_bind) {
 
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_TRUE(parser["l"].as<bool>());
-  ASSERT_TRUE(parser["a"].as<bool>());
-  ASSERT_TRUE(parser["F"].as<bool>());
+  ASSERT_TRUE(parser["l"].get<bool>());
+  ASSERT_TRUE(parser["a"].get<bool>());
+  ASSERT_TRUE(parser["F"].get<bool>());
   ASSERT_TRUE(option.flag_l);
   ASSERT_TRUE(option.flag_a);
   ASSERT_TRUE(option.flag_F);
 
-  ASSERT_EQ(parser["color"].as<std::string>(), "auto");
+  ASSERT_EQ(parser["color"].get<std::string>(), "auto");
   ASSERT_EQ(option.option_color, "auto");
 
   ASSERT_EQ(
-      parser["files_or_directories"].as<std::vector<std::string>>().size(), 3);
-  ASSERT_EQ(parser["files_or_directories"].as<std::vector<std::string>>()[0],
+      parser["files_or_directories"].get<std::vector<std::string>>().size(), 3);
+  ASSERT_EQ(parser["files_or_directories"].get<std::vector<std::string>>()[0],
             "./1");
-  ASSERT_EQ(parser["files_or_directories"].as<std::vector<std::string>>()[1],
+  ASSERT_EQ(parser["files_or_directories"].get<std::vector<std::string>>()[1],
             "./1/2/3");
-  ASSERT_EQ(parser["files_or_directories"].as<std::vector<std::string>>()[2],
+  ASSERT_EQ(parser["files_or_directories"].get<std::vector<std::string>>()[2],
             ".hided/");
 
   ASSERT_EQ(option.files_or_directories.size(), 3);
@@ -1032,25 +1032,25 @@ TEST_F(LSCommandBind, parser3_bind) {
 }
 
 TEST_F(LSCommand, alias_flag) {
-  ASSERT_EQ(parser["color"].as<std::string>(), "when");
+  ASSERT_EQ(parser["color"].get<std::string>(), "when");
 
   std::vector<const char*> cmd{"ls",  "-laF",    "--color=always", "-G",
                                "./1", "./1/2/3", ".hided/"};
 
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_TRUE(parser["l"].as<bool>());
-  ASSERT_TRUE(parser["a"].as<bool>());
-  ASSERT_TRUE(parser["F"].as<bool>());
+  ASSERT_TRUE(parser["l"].get<bool>());
+  ASSERT_TRUE(parser["a"].get<bool>());
+  ASSERT_TRUE(parser["F"].get<bool>());
 
-  ASSERT_EQ(parser["color"].as<std::string>(), "auto");
+  ASSERT_EQ(parser["color"].get<std::string>(), "auto");
 
   ASSERT_EQ(
-      parser["files_or_directories"].as<std::vector<std::string>>().size(), 3);
-  ASSERT_EQ(parser["files_or_directories"].as<std::vector<std::string>>()[0],
+      parser["files_or_directories"].get<std::vector<std::string>>().size(), 3);
+  ASSERT_EQ(parser["files_or_directories"].get<std::vector<std::string>>()[0],
             "./1");
-  ASSERT_EQ(parser["files_or_directories"].as<std::vector<std::string>>()[1],
+  ASSERT_EQ(parser["files_or_directories"].get<std::vector<std::string>>()[1],
             "./1/2/3");
-  ASSERT_EQ(parser["files_or_directories"].as<std::vector<std::string>>()[2],
+  ASSERT_EQ(parser["files_or_directories"].get<std::vector<std::string>>()[2],
             ".hided/");
 }

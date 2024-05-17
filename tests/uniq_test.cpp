@@ -120,7 +120,7 @@ TEST_F(UniqCommand, count) {
 
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_TRUE(parser["count"].as<bool>());
+  ASSERT_TRUE(parser["count"].get<bool>());
 
   ASSERT_EQ(parser["repeated"].count(), 0);
   ASSERT_EQ(parser["all-repeated"].count(), 0);
@@ -135,7 +135,7 @@ TEST_F(UniqCommand, ignore_case) {
 
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_TRUE(parser["count"].as<bool>());
+  ASSERT_TRUE(parser["count"].get<bool>());
 
   ASSERT_EQ(parser["repeated"].count(), 0);
   ASSERT_EQ(parser["all-repeated"].count(), 0);
@@ -144,6 +144,6 @@ TEST_F(UniqCommand, ignore_case) {
   ASSERT_EQ(parser["skip-chars"].count(), 1);
   ASSERT_EQ(parser["unique"].count(), 0);
 
-  ASSERT_EQ(parser["skip-chars"].as<int>(), 2);
-  ASSERT_TRUE(parser["ignore-case"].as<bool>());
+  ASSERT_EQ(parser["skip-chars"].get<int>(), 2);
+  ASSERT_TRUE(parser["ignore-case"].get<bool>());
 }

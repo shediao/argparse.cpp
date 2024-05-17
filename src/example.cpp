@@ -13,7 +13,7 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  if (parser["help"].as<bool>()) {
+  if (parser["help"].get<bool>()) {
     std::cout << parser.usage() << std::endl;
   }
 

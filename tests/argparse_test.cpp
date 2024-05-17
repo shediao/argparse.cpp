@@ -14,8 +14,8 @@ TEST(Base, count0) {
   ASSERT_TRUE(is_debug);
   ASSERT_EQ(2, parser["d"].count());
 
-  ASSERT_TRUE(parser["debug"].as<bool>());
-  ASSERT_THROW(parser["debug"].as<int>(), argparse::bad_value_access);
+  ASSERT_TRUE(parser["debug"].get<bool>());
+  ASSERT_THROW(parser["debug"].get<int>(), argparse::bad_value_access);
 }
 
 TEST(Base, count1) {
@@ -32,8 +32,8 @@ TEST(Base, count1) {
   ASSERT_TRUE(is_debug);
   ASSERT_EQ(5, parser["d"].count());
 
-  ASSERT_TRUE(parser["debug"].as<bool>());
-  ASSERT_THROW(parser["debug"].as<int>(), argparse::bad_value_access);
+  ASSERT_TRUE(parser["debug"].get<bool>());
+  ASSERT_THROW(parser["debug"].get<int>(), argparse::bad_value_access);
 }
 
 TEST(Base, is_flag) {
@@ -55,13 +55,13 @@ TEST(Base, as) {
   parser.add_flag<bool>("d,debug,!r,!release");
   parser.add_option<std::string>("type");
 
-  ASSERT_FALSE(parser["verbose"].as<bool>());
-  ASSERT_FALSE(parser["debug"].as<bool>());
-  ASSERT_EQ(parser["type"].as<std::string>(), "");
+  ASSERT_FALSE(parser["verbose"].get<bool>());
+  ASSERT_FALSE(parser["debug"].get<bool>());
+  ASSERT_EQ(parser["type"].get<std::string>(), "");
 
-  ASSERT_THROW(parser["debug"].as<int>(), argparse::bad_value_access);
-  ASSERT_THROW(parser["type"].as<int>(), argparse::bad_value_access);
-  ASSERT_THROW(parser["verbose"].as<int>(), argparse::bad_value_access);
+  ASSERT_THROW(parser["debug"].get<int>(), argparse::bad_value_access);
+  ASSERT_THROW(parser["type"].get<int>(), argparse::bad_value_access);
+  ASSERT_THROW(parser["verbose"].get<int>(), argparse::bad_value_access);
 }
 
 TEST(Base, as1) {
@@ -70,15 +70,15 @@ TEST(Base, as1) {
   parser.add_flag("v,verbose", verbose);
   parser.add_option<std::vector<std::string>>("i,input");
 
-  ASSERT_THROW(parser["input"].as<std::string>(), argparse::bad_value_access);
-  ASSERT_TRUE(parser["input"].as<std::vector<std::string>>().empty());
+  ASSERT_THROW(parser["input"].get<std::string>(), argparse::bad_value_access);
+  ASSERT_TRUE(parser["input"].get<std::vector<std::string>>().empty());
 
   std::vector<const char*> cmd{"argparser", "-i",    "file1",
                                "--input",   "file2", "-v"};
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_FALSE(parser["input"].as<std::vector<std::string>>().empty());
-  auto& inputs = parser["input"].as<std::vector<std::string>>();
+  ASSERT_FALSE(parser["input"].get<std::vector<std::string>>().empty());
+  auto& inputs = parser["input"].get<std::vector<std::string>>();
 
   ASSERT_EQ(inputs.size(), 2);
   ASSERT_EQ("file1", inputs[0]);
@@ -92,29 +92,29 @@ TEST(Base, set_default) {
   parser.add_option<std::string>("name");
   parser.add_option<std::vector<std::string>>("input");
 
-  ASSERT_FALSE(parser["debug"].as<bool>());
+  ASSERT_FALSE(parser["debug"].get<bool>());
 
   parser["debug"].set_default(true);
-  ASSERT_TRUE(parser["debug"].as<bool>());
+  ASSERT_TRUE(parser["debug"].get<bool>());
 
-  ASSERT_EQ(0, parser["level"].as<int>());
+  ASSERT_EQ(0, parser["level"].get<int>());
   parser["level"].set_default(1000);
-  ASSERT_EQ(1000, parser["level"].as<int>());
+  ASSERT_EQ(1000, parser["level"].get<int>());
 
-  ASSERT_TRUE(parser["name"].as<std::string>().empty());
+  ASSERT_TRUE(parser["name"].get<std::string>().empty());
   parser["name"].set_default("shediao.xsd");
-  ASSERT_EQ(parser["name"].as<std::string>(), "shediao.xsd");
+  ASSERT_EQ(parser["name"].get<std::string>(), "shediao.xsd");
 
-  ASSERT_TRUE(parser["input"].as<std::vector<std::string>>().empty());
+  ASSERT_TRUE(parser["input"].get<std::vector<std::string>>().empty());
   std::vector<std::string> inputs{"1", "2", "3", "4", "5"};
   parser["input"].set_default(inputs);
 
-  ASSERT_EQ(parser["input"].as<std::vector<std::string>>().size(), 5);
-  ASSERT_EQ(parser["input"].as<std::vector<std::string>>()[0], "1");
-  ASSERT_EQ(parser["input"].as<std::vector<std::string>>()[1], "2");
-  ASSERT_EQ(parser["input"].as<std::vector<std::string>>()[2], "3");
-  ASSERT_EQ(parser["input"].as<std::vector<std::string>>()[3], "4");
-  ASSERT_EQ(parser["input"].as<std::vector<std::string>>()[4], "5");
+  ASSERT_EQ(parser["input"].get<std::vector<std::string>>().size(), 5);
+  ASSERT_EQ(parser["input"].get<std::vector<std::string>>()[0], "1");
+  ASSERT_EQ(parser["input"].get<std::vector<std::string>>()[1], "2");
+  ASSERT_EQ(parser["input"].get<std::vector<std::string>>()[2], "3");
+  ASSERT_EQ(parser["input"].get<std::vector<std::string>>()[3], "4");
+  ASSERT_EQ(parser["input"].get<std::vector<std::string>>()[4], "5");
 }
 
 TEST(Base, set_default2) {
@@ -142,7 +142,7 @@ TEST(Base, set_default2) {
   parser["name"].set_default("shediao.xsd");
   ASSERT_EQ(name, "shediao.xsd");
 
-  ASSERT_TRUE(parser["input"].as<std::vector<std::string>>().empty());
+  ASSERT_TRUE(parser["input"].get<std::vector<std::string>>().empty());
   std::vector<std::string> inputs2{"1", "2", "3", "4", "5"};
   parser["input"].set_default(inputs2);
 
@@ -171,11 +171,11 @@ TEST(Base, bind) {
       "test", "-l5", "--name=shediao.xsd", "dir1", "file1", "file2", "file3"};
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_EQ(help, parser["help"].as<bool>());
-  ASSERT_EQ(level, parser["level"].as<int>());
-  ASSERT_EQ(name, parser["name"].as<std::string>());
-  ASSERT_EQ(dir, parser["dir"].as<std::string>());
-  ASSERT_EQ(files, parser["files"].as<std::vector<std::string>>());
+  ASSERT_EQ(help, parser["help"].get<bool>());
+  ASSERT_EQ(level, parser["level"].get<int>());
+  ASSERT_EQ(name, parser["name"].get<std::string>());
+  ASSERT_EQ(dir, parser["dir"].get<std::string>());
+  ASSERT_EQ(files, parser["files"].get<std::vector<std::string>>());
 
   ASSERT_FALSE(help);
 
@@ -261,25 +261,25 @@ TEST(ArgParser, parser0_3) {
   EXPECT_EQ(flag_3, true);
   EXPECT_EQ(flag_v, 4);
 
-  EXPECT_EQ(parser["a"].as<bool>(), false);
-  EXPECT_EQ(parser["b"].as<bool>(), true);
-  EXPECT_EQ(parser["c"].as<bool>(), false);
-  EXPECT_EQ(parser["d"].as<bool>(), false);
-  EXPECT_EQ(parser["h"].as<bool>(), false);
-  EXPECT_EQ(parser["1"].as<bool>(), true);
-  EXPECT_EQ(parser["2"].as<bool>(), true);
-  EXPECT_EQ(parser["3"].as<bool>(), true);
-  EXPECT_EQ(parser["v"].as<int>(), 4);
+  EXPECT_EQ(parser["a"].get<bool>(), false);
+  EXPECT_EQ(parser["b"].get<bool>(), true);
+  EXPECT_EQ(parser["c"].get<bool>(), false);
+  EXPECT_EQ(parser["d"].get<bool>(), false);
+  EXPECT_EQ(parser["h"].get<bool>(), false);
+  EXPECT_EQ(parser["1"].get<bool>(), true);
+  EXPECT_EQ(parser["2"].get<bool>(), true);
+  EXPECT_EQ(parser["3"].get<bool>(), true);
+  EXPECT_EQ(parser["v"].get<int>(), 4);
 
-  EXPECT_EQ(parser["a"].as<bool>(), false);
-  EXPECT_EQ(parser["b"].as<bool>(), true);
-  EXPECT_EQ(parser["c"].as<bool>(), false);
-  EXPECT_EQ(parser["d"].as<bool>(), false);
-  EXPECT_EQ(parser["h"].as<bool>(), false);
-  EXPECT_EQ(parser["1"].as<bool>(), true);
-  EXPECT_EQ(parser["2"].as<bool>(), true);
-  EXPECT_EQ(parser["3"].as<bool>(), true);
-  EXPECT_EQ(parser["v"].as<int>(), 4);
+  EXPECT_EQ(parser["a"].get<bool>(), false);
+  EXPECT_EQ(parser["b"].get<bool>(), true);
+  EXPECT_EQ(parser["c"].get<bool>(), false);
+  EXPECT_EQ(parser["d"].get<bool>(), false);
+  EXPECT_EQ(parser["h"].get<bool>(), false);
+  EXPECT_EQ(parser["1"].get<bool>(), true);
+  EXPECT_EQ(parser["2"].get<bool>(), true);
+  EXPECT_EQ(parser["3"].get<bool>(), true);
+  EXPECT_EQ(parser["v"].get<int>(), 4);
 
   EXPECT_EQ(3, option_e.size());
   EXPECT_EQ(option_e.at("xxx"), "yyy");

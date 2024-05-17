@@ -124,18 +124,18 @@ TEST(Cat, help) {
   EXPECT_TRUE(cat_flags.files.empty());
 
   using namespace std::literals::string_literals;
-  EXPECT_EQ(cat_flags.show_all, parser["show-all"].as<bool>());
-  EXPECT_EQ(cat_flags.number_nonblank, parser["number-nonblank"].as<bool>());
-  EXPECT_EQ(cat_flags.e, parser["e"].as<bool>());
-  EXPECT_EQ(cat_flags.show_ends, parser["show-ends"].as<bool>());
-  EXPECT_EQ(cat_flags.number, parser["number"].as<bool>());
-  EXPECT_EQ(cat_flags.squeeze_blank, parser["squeeze-blank"].as<bool>());
-  EXPECT_EQ(cat_flags.t, parser["t"].as<bool>());
-  EXPECT_EQ(cat_flags.show_tabs, parser["show-tabs"].as<bool>());
-  EXPECT_EQ(cat_flags.u, parser["u"].as<bool>());
-  EXPECT_EQ(cat_flags.show_nonprinting, parser["show-nonprinting"].as<bool>());
-  EXPECT_EQ(cat_flags.help, parser["help"].as<bool>());
-  EXPECT_EQ(cat_flags.version, parser["version"].as<bool>());
+  EXPECT_EQ(cat_flags.show_all, parser["show-all"].get<bool>());
+  EXPECT_EQ(cat_flags.number_nonblank, parser["number-nonblank"].get<bool>());
+  EXPECT_EQ(cat_flags.e, parser["e"].get<bool>());
+  EXPECT_EQ(cat_flags.show_ends, parser["show-ends"].get<bool>());
+  EXPECT_EQ(cat_flags.number, parser["number"].get<bool>());
+  EXPECT_EQ(cat_flags.squeeze_blank, parser["squeeze-blank"].get<bool>());
+  EXPECT_EQ(cat_flags.t, parser["t"].get<bool>());
+  EXPECT_EQ(cat_flags.show_tabs, parser["show-tabs"].get<bool>());
+  EXPECT_EQ(cat_flags.u, parser["u"].get<bool>());
+  EXPECT_EQ(cat_flags.show_nonprinting, parser["show-nonprinting"].get<bool>());
+  EXPECT_EQ(cat_flags.help, parser["help"].get<bool>());
+  EXPECT_EQ(cat_flags.version, parser["version"].get<bool>());
 }
 
 TEST(Cat, version) {
@@ -160,18 +160,18 @@ TEST(Cat, version) {
   EXPECT_TRUE(cat_flags.files.empty());
 
   using namespace std::literals::string_literals;
-  EXPECT_EQ(cat_flags.show_all, parser["show-all"].as<bool>());
-  EXPECT_EQ(cat_flags.number_nonblank, parser["number-nonblank"].as<bool>());
-  EXPECT_EQ(cat_flags.e, parser["e"].as<bool>());
-  EXPECT_EQ(cat_flags.show_ends, parser["show-ends"].as<bool>());
-  EXPECT_EQ(cat_flags.number, parser["number"].as<bool>());
-  EXPECT_EQ(cat_flags.squeeze_blank, parser["squeeze-blank"].as<bool>());
-  EXPECT_EQ(cat_flags.t, parser["t"].as<bool>());
-  EXPECT_EQ(cat_flags.show_tabs, parser["show-tabs"].as<bool>());
-  EXPECT_EQ(cat_flags.u, parser["u"].as<bool>());
-  EXPECT_EQ(cat_flags.show_nonprinting, parser["show-nonprinting"].as<bool>());
-  EXPECT_EQ(cat_flags.help, parser["help"].as<bool>());
-  EXPECT_EQ(cat_flags.version, parser["version"].as<bool>());
+  EXPECT_EQ(cat_flags.show_all, parser["show-all"].get<bool>());
+  EXPECT_EQ(cat_flags.number_nonblank, parser["number-nonblank"].get<bool>());
+  EXPECT_EQ(cat_flags.e, parser["e"].get<bool>());
+  EXPECT_EQ(cat_flags.show_ends, parser["show-ends"].get<bool>());
+  EXPECT_EQ(cat_flags.number, parser["number"].get<bool>());
+  EXPECT_EQ(cat_flags.squeeze_blank, parser["squeeze-blank"].get<bool>());
+  EXPECT_EQ(cat_flags.t, parser["t"].get<bool>());
+  EXPECT_EQ(cat_flags.show_tabs, parser["show-tabs"].get<bool>());
+  EXPECT_EQ(cat_flags.u, parser["u"].get<bool>());
+  EXPECT_EQ(cat_flags.show_nonprinting, parser["show-nonprinting"].get<bool>());
+  EXPECT_EQ(cat_flags.help, parser["help"].get<bool>());
+  EXPECT_EQ(cat_flags.version, parser["version"].get<bool>());
 }
 
 TEST(Cat, files) {

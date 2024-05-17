@@ -104,15 +104,15 @@ TEST(getopt, parse) {
 
   ASSERT_NO_THROW(parser.parse(cmd.size(), cmd.data()));
 
-  ASSERT_TRUE(parser["quiet"].as<bool>());
-  ASSERT_EQ("hdrv", parser["options"].as<std::string>());
+  ASSERT_TRUE(parser["quiet"].get<bool>());
+  ASSERT_EQ("hdrv", parser["options"].get<std::string>());
   ASSERT_EQ("help,debug,release,version",
-            parser["longoptions"].as<std::string>());
+            parser["longoptions"].get<std::string>());
 
-  ASSERT_EQ(5, parser["parameters"].as<std::vector<std::string>>().size());
-  ASSERT_EQ("-a", parser["parameters"].as<std::vector<std::string>>()[0]);
-  ASSERT_EQ("-b", parser["parameters"].as<std::vector<std::string>>()[1]);
-  ASSERT_EQ("-c", parser["parameters"].as<std::vector<std::string>>()[2]);
-  ASSERT_EQ("-d", parser["parameters"].as<std::vector<std::string>>()[3]);
-  ASSERT_EQ("-e", parser["parameters"].as<std::vector<std::string>>()[4]);
+  ASSERT_EQ(5, parser["parameters"].get<std::vector<std::string>>().size());
+  ASSERT_EQ("-a", parser["parameters"].get<std::vector<std::string>>()[0]);
+  ASSERT_EQ("-b", parser["parameters"].get<std::vector<std::string>>()[1]);
+  ASSERT_EQ("-c", parser["parameters"].get<std::vector<std::string>>()[2]);
+  ASSERT_EQ("-d", parser["parameters"].get<std::vector<std::string>>()[3]);
+  ASSERT_EQ("-e", parser["parameters"].get<std::vector<std::string>>()[4]);
 }
